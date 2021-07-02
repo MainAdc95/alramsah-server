@@ -2,16 +2,17 @@ require("dotenv").config();
 
 const port = process.env.PORT || 5000;
 
+// https://www.alramsah.com
 const Config = {
     port,
     isProduction: process.env.NODE_ENV === "production",
     clientDomain:
         process.env.NODE_ENV === "production"
-            ? "https://alramsah.com"
+            ? "http://128.199.80.85:5000"
             : `http://localhost:3000`,
     domain:
         process.env.NODE_ENV === "production"
-            ? "https://alramsah.com/api"
+            ? "http://128.199.80.85:5000/api"
             : `http://localhost:${port}/api`,
     jwtSecret: process.env.JWT_SECRET || "alskdjf10293nlkajndhflsdfgkj12",
     aws: {
