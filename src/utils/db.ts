@@ -7,5 +7,4 @@ export const pool = new Pool({
     user: Config.db.main.user,
     password: Config.db.main.password,
     database: Config.db.main.database,
-    ssl: false,
 });

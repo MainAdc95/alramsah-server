@@ -22,7 +22,7 @@ const query = (filter?: string, order?: string, limit?: string) => `
             FROM tags t
                 LEFT JOIN users cb ON cb.user_id=t.created_by
                 LEFT JOIN users ub ON ub.user_id=t.updated_by
-            ${filter}
+            ${filter || ""}
             GROUP BY t.tag_id, cb.user_id, ub.user_id
             ${order || "ORDER BY t.created_at desc"}
             ${limit || "LIMIT 100"}
@@ -48,27 +48,33 @@ export async function getTags(req: Request, res: Response, next: NextFunction) {
     try {
         const { p, r } = req.query;
 
-        const {
-            rows: [{ count }],
-        } = await pool.query(`SELECT count(*) FROM tags`);
+        if (p || r) {
+            const {
+                rows: [{ count }],
+            } = await pool.query(`SELECT count(*) FROM tags`);
 
-        const { rows: tags }: QueryResult<ITag> = await pool.query(
-            query(
-                p
-                    ? `WHERE tag_order < ${
-                          Number(Number(p) === 1 ? count + 1 : count) /
-                          Number(p)
-                      }`
-                    : "",
-                "",
-                `LIMIT ${r}`
-            )
-        );
+            const { rows: tags }: QueryResult<ITag> = await pool.query(
+                query(
+                    p
+                        ? `WHERE tag_order < ${
+                              Number(Number(p) === 1 ? count + 1 : count) /
+                              Number(p)
+                          }`
+                        : "",
+                    "",
+                    `LIMIT ${r}`
+                )
+            );
 
-        return res.status(200).json({
-            results: count,
-            tags,
-        });
+            return res.status(200).json({
+                results: count,
+                tags,
+            });
+        }
+
+        const { rows: tags } = await pool.query(query());
+
+        return res.status(200).json(tags);
     } catch (err) {
         return next(err);
     }
