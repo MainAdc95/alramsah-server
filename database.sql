@@ -76,6 +76,7 @@ CREATE TABLE IF NOT EXISTS news (
     section uuid REFERENCES sections(section_id) ON DELETE NO ACTION ON UPDATE CASCADE,
     is_published BOOLEAN DEFAULT FALSE,
     news_order SERIAL NOT NULL,
+    readers INT NOT NULL,
     created_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
     updated_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
