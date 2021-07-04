@@ -4,6 +4,7 @@ import {
     getSections,
     editSection,
     addSection,
+    deleteSection,
 } from "../handlers/section";
 import { isLoggedIn } from "../middlewares/auth";
 import { isAdmin } from "../middlewares/roles";
@@ -17,5 +18,7 @@ router.get("/sections", getSections);
 router.put("/section/:sectionId", editSection);
 
 router.post("/sections", isLoggedIn, isAdmin, addSection);
+
+router.delete("/section/:sectionId", isLoggedIn, isAdmin, deleteSection);
 
 export default router;

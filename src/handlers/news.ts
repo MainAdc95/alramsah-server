@@ -8,7 +8,7 @@ import { IImage } from "../models/image";
 import { ITag } from "../models/tag";
 import { ISection } from "../models/section";
 
-const newsQuery = (filter?: string, order?: string, limit?: string) => `
+const newsQuery = (filter: string, order: string, limit: string) => `
             SELECT
                 n.news_id,
                 n.intro,
@@ -61,7 +61,7 @@ const newsQuery = (filter?: string, order?: string, limit?: string) => `
                         LEFT JOIN images i ON i.image_id=ni.image_id
                 ) as i
                     ON i.news_id=n.news_id
-            ${filter}
+            ${filter || ""}
             GROUP BY n.news_id, cb.user_id, ub.user_id, s.section_id
             ${order || "ORDER BY n.created_at desc"}
             ${limit || "LIMIT 100"}
@@ -74,7 +74,7 @@ export async function getNews(req: Request, res: Response, next: NextFunction) {
         const {
             rows: [news],
         }: QueryResult<INews> = await pool.query(
-            newsQuery("WHERE n.news_id=$1", ""),
+            newsQuery("WHERE n.news_id=$1", "", ""),
             [newsId]
         );
 
@@ -90,21 +90,50 @@ export async function getAllNews(
     next: NextFunction
 ) {
     try {
-        const { p, r, type } = req.query;
+        const { p, r, type, sectionId, tag } = req.query;
 
-        const {
+        let {
             rows: [{ count }],
-        } = await pool.query(`SELECT count(*) FROM news`);
+        } = await pool.query(
+            `SELECT count(*) FROM news ${
+                sectionId ? `WHERE section='${sectionId}'` : ""
+            }`
+        );
 
-        const { rows: news }: QueryResult<ITag> = await pool.query(
+        count = Number(count);
+
+        console.log(
+            sectionId
+                ? newsQuery(
+                      p
+                          ? `WHERE 
+                ${sectionId ? `n.section='${sectionId}' AND` : ""}    
+                ${
+                    type === "published"
+                        ? `is_published=true AND`
+                        : "is_published=false AND"
+                } news_order < ${
+                                Number(Number(p) === 1 ? count + 1 : count) /
+                                Number(p)
+                            }`
+                          : "",
+                      "",
+                      r ? `LIMIT ${r}` : ""
+                  )
+                : null
+        );
+        console.log(Number(Number(p) === 1 ? count + 1 : count) / Number(p));
+        const { rows: news }: QueryResult<INews> = await pool.query(
             newsQuery(
                 p
-                    ? `WHERE ${
-                          type === "published"
-                              ? `is_published=true AND`
-                              : "is_published=false AND"
-                      } news_order < ${
-                          Number(Number(p) === 1 ? count + 1 : count) /
+                    ? `WHERE 
+                    ${sectionId ? `n.section='${sectionId}' AND` : ""}    
+                    ${
+                        type === "published"
+                            ? `is_published=true AND`
+                            : "is_published=false AND"
+                    } news_order > ${
+                          Number(Number(p) === 1 ? count - 1 : count) /
                           Number(p)
                       }`
                     : "",

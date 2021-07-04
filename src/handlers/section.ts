@@ -135,3 +135,21 @@ export async function editSection(
         return next(err);
     }
 }
+
+export async function deleteSection(
+    req: Request,
+    res: Response,
+    next: NextFunction
+) {
+    try {
+        const { sectionId } = req.params;
+
+        await pool.query(`DELETE FROM sections WHERE section_id=$1`, [
+            sectionId,
+        ]);
+
+        return res.status(200).json("");
+    } catch (err) {
+        return next(err);
+    }
+}

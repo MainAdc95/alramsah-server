@@ -8,11 +8,11 @@ const Config = {
     isProduction: process.env.NODE_ENV === "production",
     clientDomain:
         process.env.NODE_ENV === "production"
-            ? "http://128.199.80.85:5000"
+            ? "https://www.alshamkhacoop.com"
             : `http://localhost:3000`,
     domain:
         process.env.NODE_ENV === "production"
-            ? "http://128.199.80.85:5000/api"
+            ? "https://www.alshamkhacoop.com/api"
             : `http://localhost:${port}/api`,
     jwtSecret: process.env.JWT_SECRET || "alskdjf10293nlkajndhflsdfgkj12",
     aws: {
