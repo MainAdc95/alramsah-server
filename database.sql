@@ -57,6 +57,19 @@ CREATE TABLE IF NOT EXISTS sections (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- ALTER TABLE sections
+-- ADD section_order SERIAL NOT NULL;
+
+-- UPDATE sections SET section_order=1 WHERE section_id='29ca6e30-7a60-4547-af5a-9adbe6c31409';
+-- UPDATE sections SET section_order=2 WHERE section_id='29ca6e30-7a60-4547-af5a-9adbe6c31409';
+-- UPDATE sections SET section_order=3 WHERE section_id='29ca6e30-7a60-4547-af5a-9adbe6c31409';
+-- UPDATE sections SET section_order=4 WHERE section_id='29ca6e30-7a60-4547-af5a-9adbe6c31409';
+-- UPDATE sections SET section_order=5 WHERE section_id='29ca6e30-7a60-4547-af5a-9adbe6c31409';
+-- UPDATE sections SET section_order=6 WHERE section_id='29ca6e30-7a60-4547-af5a-9adbe6c31409';
+-- UPDATE sections SET section_order=7 WHERE section_id='29ca6e30-7a60-4547-af5a-9adbe6c31409';
+-- UPDATE sections SET section_order=8 WHERE section_id='29ca6e30-7a60-4547-af5a-9adbe6c31409';
+-- UPDATE sections SET section_order=9 WHERE section_id='29ca6e30-7a60-4547-af5a-9adbe6c31409';
+
 CREATE TABLE IF NOT EXISTS tags (
     tag_id uuid PRIMARY KEY,
     tag_name TEXT NOT NULL,
@@ -82,6 +95,11 @@ CREATE TABLE IF NOT EXISTS news (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- ALTER TABLE news
+-- ADD readers INT;
+
+
 
 CREATE TABLE IF NOT EXISTS news_image (
     news_id uuid NOT NULL REFERENCES news(news_id) ON DELETE CASCADE ON UPDATE CASCADE,

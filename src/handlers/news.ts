@@ -8,14 +8,18 @@ import { IImage } from "../models/image";
 import { ITag } from "../models/tag";
 import { ISection } from "../models/section";
 
-const newsQuery = (filter: string, order: string, limit: string) => `
+const newsQuery = (
+    filter: string,
+    order: string,
+    limit: string,
+    offset: string
+) => `
             SELECT
                 n.news_id,
                 n.intro,
                 n.title,
                 n.text,
                 n.sub_titles,
-                n.section,
                 n.updated_at,
                 n.created_at,
                 n.news_order,
@@ -65,6 +69,7 @@ const newsQuery = (filter: string, order: string, limit: string) => `
             GROUP BY n.news_id, cb.user_id, ub.user_id, s.section_id
             ${order || "ORDER BY n.created_at desc"}
             ${limit || "LIMIT 100"}
+            ${offset || ""}
         `;
 
 export async function getNews(req: Request, res: Response, next: NextFunction) {
@@ -74,7 +79,7 @@ export async function getNews(req: Request, res: Response, next: NextFunction) {
         const {
             rows: [news],
         }: QueryResult<INews> = await pool.query(
-            newsQuery("WHERE n.news_id=$1", "", ""),
+            newsQuery("WHERE n.news_id=$1", "", "", ""),
             [newsId]
         );
 
@@ -84,61 +89,59 @@ export async function getNews(req: Request, res: Response, next: NextFunction) {
     }
 }
 
+const sum = (times: number, value: number) => {
+    let totalValue = 0;
+
+    for (let i = 0; i < times; i++) {
+        totalValue += value;
+    }
+
+    return totalValue - value;
+};
+
 export async function getAllNews(
     req: Request,
     res: Response,
     next: NextFunction
 ) {
     try {
-        const { p, r, type, sectionId, tag } = req.query;
+        let { p, r, type, sectionId, tag }: any = req.query;
+
+        p = Number(p);
+        r = r ? Number(r) : 20;
 
         let {
             rows: [{ count }],
         } = await pool.query(
-            `SELECT count(*) FROM news ${
-                sectionId ? `WHERE section='${sectionId}'` : ""
+            `SELECT count(*) FROM news n WHERE 
+            ${
+                tag
+                    ? `n.news_id IN (select news_id from news_tag WHERE tag_id='${tag}') AND`
+                    : ""
+            }
+            is_published=${type === "published" ? true : false} ${
+                sectionId ? `AND section='${sectionId}'` : ""
             }`
         );
 
         count = Number(count);
 
-        console.log(
-            sectionId
-                ? newsQuery(
-                      p
-                          ? `WHERE 
-                ${sectionId ? `n.section='${sectionId}' AND` : ""}    
-                ${
-                    type === "published"
-                        ? `is_published=true AND`
-                        : "is_published=false AND"
-                } news_order < ${
-                                Number(Number(p) === 1 ? count + 1 : count) /
-                                Number(p)
-                            }`
-                          : "",
-                      "",
-                      r ? `LIMIT ${r}` : ""
-                  )
-                : null
-        );
-        console.log(Number(Number(p) === 1 ? count + 1 : count) / Number(p));
         const { rows: news }: QueryResult<INews> = await pool.query(
             newsQuery(
                 p
-                    ? `WHERE 
-                    ${sectionId ? `n.section='${sectionId}' AND` : ""}    
+                    ? `WHERE
+                    ${sectionId ? `n.section='${sectionId}' AND` : ""}
                     ${
-                        type === "published"
-                            ? `is_published=true AND`
-                            : "is_published=false AND"
-                    } news_order > ${
-                          Number(Number(p) === 1 ? count - 1 : count) /
-                          Number(p)
-                      }`
+                        tag
+                            ? `n.news_id IN (select news_id from news_tag WHERE tag_id='${tag}') AND`
+                            : ""
+                    }
+                    ${`is_published=${type === "published" ? true : false}`}
+                    `
                     : "",
                 "",
-                r ? `LIMIT ${r}` : ""
+                r ? `LIMIT ${r}` : "",
+                `OFFSET ${sum(p, r)}`
             )
         );
 
