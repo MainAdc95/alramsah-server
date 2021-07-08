@@ -29,7 +29,7 @@ const userQuery = (filter?: string, order?: string, limit?: string) => `
                 u.updated_at,
                 jsonb_build_object (
                     'image_id', ui.image_id,
-                    'image_name', ui.image_name
+                    'image_id', ui.image_id
                 ) as avatar
             FROM users u
                 LEFT JOIN users uu ON u.user_id=uu.user_id
@@ -193,7 +193,7 @@ export async function editProfile(
             last_name,
             phone,
                 json_build_object (
-                    'image_name', ui.image_name
+                    'image_id', ui.image_id
                 ) as avatar
             FROM users u
                 LEFT JOIN user_images ui ON u.avatar=ui.image_id

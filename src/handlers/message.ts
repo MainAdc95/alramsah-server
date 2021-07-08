@@ -25,7 +25,7 @@ const messageQuery = (filter?: string, order?: string, limit?: string) => `
                 mi.message_id,
                 jsonb_build_object (
                     'image_id', i.image_id,
-                    'image_name', i.image_name
+                    'sizes', i.sizes
                 ) as image
             FROM message_image mi
                 LEFT JOIN images i ON i.image_id=mi.image_id

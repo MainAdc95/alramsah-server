@@ -15,7 +15,7 @@ const userQuery = (filter?: string) => `
         u.user_id,
         jsonb_build_object (
             'image_id', ui.image_id,
-            'image_name', ui.image_name
+            'image_id', ui.image_id
         ) as avatar,
         u.username,
         u.first_name,

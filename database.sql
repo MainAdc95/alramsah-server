@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS user_images (
 
 INSERT INTO user_images (
     image_id,
-    image_name    
+    image_name
 ) VALUES ('e5daee20-3122-4481-9898-4682624fae09', 'prof.png');
 
 CREATE TABLE IF NOT EXISTS users (
@@ -41,16 +41,20 @@ ALTER TABLE IF EXISTS user_images
 
 CREATE TABLE IF NOT EXISTS images (
     image_id uuid PRIMARY KEY,
-    image_name TEXT NOT NULL UNIQUE,
+    sizes JSONB,
     image_description TEXT,
     created_by uuid NOT NULL REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- ALTER TABLE images ADD sizes JSONB;
+-- ALTER TABLE images DROP COLUMN image_name;
+
 CREATE TABLE IF NOT EXISTS sections (
     section_id uuid PRIMARY KEY,
     section_name TEXT NOT NULL,
     color VARCHAR(255),
+    section_order SERIAL NOT NULL,
     created_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
     updated_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -60,15 +64,15 @@ CREATE TABLE IF NOT EXISTS sections (
 -- ALTER TABLE sections
 -- ADD section_order SERIAL NOT NULL;
 
--- UPDATE sections SET section_order=1 WHERE section_id='29ca6e30-7a60-4547-af5a-9adbe6c31409';
--- UPDATE sections SET section_order=2 WHERE section_id='29ca6e30-7a60-4547-af5a-9adbe6c31409';
--- UPDATE sections SET section_order=3 WHERE section_id='29ca6e30-7a60-4547-af5a-9adbe6c31409';
--- UPDATE sections SET section_order=4 WHERE section_id='29ca6e30-7a60-4547-af5a-9adbe6c31409';
--- UPDATE sections SET section_order=5 WHERE section_id='29ca6e30-7a60-4547-af5a-9adbe6c31409';
--- UPDATE sections SET section_order=6 WHERE section_id='29ca6e30-7a60-4547-af5a-9adbe6c31409';
--- UPDATE sections SET section_order=7 WHERE section_id='29ca6e30-7a60-4547-af5a-9adbe6c31409';
--- UPDATE sections SET section_order=8 WHERE section_id='29ca6e30-7a60-4547-af5a-9adbe6c31409';
--- UPDATE sections SET section_order=9 WHERE section_id='29ca6e30-7a60-4547-af5a-9adbe6c31409';
+-- UPDATE sections SET section_order=1 WHERE section_name='اقتصاد';
+-- UPDATE sections SET section_order=2 WHERE section_name='تكنولوجيا';
+-- UPDATE sections SET section_order=3 WHERE section_name='سياسة';
+-- UPDATE sections SET section_order=4 WHERE section_name='ثقافة';
+-- UPDATE sections SET section_order=5 WHERE section_name='رياضة';
+-- UPDATE sections SET section_order=6 WHERE section_name='تحقيق';
+-- UPDATE sections SET section_order=7 WHERE section_name='سياحة';
+-- UPDATE sections SET section_order=8 WHERE section_name='منوعات';
+-- UPDATE sections SET section_order=9 WHERE section_name='كتاب وآراء';
 
 CREATE TABLE IF NOT EXISTS tags (
     tag_id uuid PRIMARY KEY,
@@ -80,8 +84,25 @@ CREATE TABLE IF NOT EXISTS tags (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS articles (
+    article_id uuid PRIMARY KEY,
+    thumbnail uuid REFERENCES images(image_id) ON DELETE NO ACTION ON UPDATE CASCADE,
+    intro TEXT NOT NULL,
+    title TEXT NOT NULL,
+    text TEXT NOT NULL,
+    sub_titles JSONB NULL,
+    section uuid REFERENCES sections(section_id) ON DELETE NO ACTION ON UPDATE CASCADE,
+    is_published BOOLEAN DEFAULT FALSE,
+    readers INT,
+    created_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
+    updated_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW() 
+);
+
 CREATE TABLE IF NOT EXISTS news (
     news_id uuid PRIMARY KEY,
+    thumbnail uuid REFERENCES images(image_id) ON DELETE NO ACTION ON UPDATE CASCADE,
     intro TEXT NOT NULL,
     title TEXT NOT NULL,
     text TEXT NOT NULL,
@@ -89,7 +110,7 @@ CREATE TABLE IF NOT EXISTS news (
     section uuid REFERENCES sections(section_id) ON DELETE NO ACTION ON UPDATE CASCADE,
     is_published BOOLEAN DEFAULT FALSE,
     news_order SERIAL NOT NULL,
-    readers INT NOT NULL,
+    readers INT,
     created_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
     updated_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -99,7 +120,8 @@ CREATE TABLE IF NOT EXISTS news (
 -- ALTER TABLE news
 -- ADD readers INT;
 
-
+-- ALTER TABLE news
+-- ADD thumbnail uuid REFERENCES images(image_id) ON DELETE NO ACTION ON UPDATE CASCADE;
 
 CREATE TABLE IF NOT EXISTS news_image (
     news_id uuid NOT NULL REFERENCES news(news_id) ON DELETE CASCADE ON UPDATE CASCADE,

@@ -4,6 +4,7 @@ import { v4 as uuid } from "uuid";
 import Config from "../config";
 import sharp from "sharp";
 import { s3 } from "../utils/aws";
+import sizeOf from "image-size";
 
 export async function addImages(
     req: Request,
@@ -12,58 +13,99 @@ export async function addImages(
 ) {
     try {
         const { authId } = req.query;
-        let { data } = req.body;
-        let images = req.files as ({
-            image_description: string;
-        } & Express.Multer.File)[];
+        let { images } = req.body;
 
-        data = JSON.parse(data);
-
-        images = images.map((img: any, i: number) => ({
-            ...img,
-            image_description: data[i].image_description,
-            category: data[i].category,
-        }));
+        if (images.length > 10)
+            return next({
+                status: 400,
+                message: "You can only upload 10 images at once.",
+            });
 
         const resImages: any = [];
 
-        for (let img of images) {
-            const format =
-                img.mimetype === "image/png" || img.mimetype === "image/svg"
-                    ? "png"
-                    : "jpeg";
-            const file = await sharp(img.buffer)[format]({
-                quality: 85,
-                mozjpeg: format === "jpeg",
-            });
-
-            const imgParams = {
-                Bucket: Config.aws.bucketName,
-                Key: uuid(),
-                Body: file,
-                ContentType: `image/${format}`,
-            };
-
-            const data = await s3.upload(imgParams).promise();
-
-            const imageId = uuid();
-            const {
-                rows: [image],
-            } = await pool.query(
-                `
-            INSERT INTO images (
-                image_id,
-                image_name,
-                image_description,
-                created_by
-            )
-            VALUES ($1, $2, $3, $4)
-            RETURNING *
-            `,
-                [imageId, data.Key, img.image_description, authId]
+        for (let img of images as {
+            image_description: string;
+            img: string;
+        }[]) {
+            const buffer = Buffer.from(
+                img.img.replace(/^data:image\/[a-zA-Z+]+;base64,/, ""),
+                "base64"
             );
 
-            resImages.push(image);
+            let { height, width, type } = sizeOf(buffer);
+
+            const format =
+                type === "image/png" || type === "image/svg" ? "png" : "jpeg";
+
+            let sizes = { s: "", m: "", l: "" };
+
+            if (height && width) {
+                for (let size of Object.keys(sizes)) {
+                    let file: any;
+
+                    if (size === "l") {
+                        file = await sharp(buffer)[format]({
+                            quality: 85,
+                            mozjpeg: format === "jpeg",
+                        });
+                    } else {
+                        console.log({
+                            height: size === "m" ? height / 2 : height / 2 / 2,
+                            width: size === "m" ? width / 2 : width / 2 / 2,
+                        });
+                        file = await sharp(buffer)
+                            .resize({
+                                height:
+                                    size === "m"
+                                        ? Math.ceil(height / 2)
+                                        : Math.ceil(height / 2 / 2),
+                                width:
+                                    size === "m"
+                                        ? Math.ceil(width / 2)
+                                        : Math.ceil(width / 2 / 2),
+                            })
+                            [format]({
+                                quality: 85,
+                                mozjpeg: format === "jpeg",
+                            });
+                    }
+
+                    const imgParams = {
+                        Bucket: Config.aws.bucketName,
+                        Key: uuid(),
+                        Body: file,
+                        ContentType: `image/${format}`,
+                    };
+
+                    const imgObject = await s3.upload(imgParams).promise();
+
+                    sizes = { ...sizes, [size]: imgObject.Key };
+                }
+
+                const imageId = uuid();
+                const {
+                    rows: [image],
+                } = await pool.query(
+                    `
+                    INSERT INTO images (
+                        image_id,
+                        sizes,
+                        image_description,
+                        created_by
+                    )
+                    VALUES ($1, $2, $3, $4)
+                    RETURNING *
+                `,
+                    [
+                        imageId,
+                        JSON.stringify(sizes),
+                        img.image_description,
+                        authId,
+                    ]
+                );
+
+                resImages.push(image);
+            }
         }
 
         return res.status(200).json(resImages);
@@ -78,20 +120,26 @@ export async function deleteImage(
     next: NextFunction
 ) {
     try {
-        const { imageName } = req.params;
+        const { imageId } = req.params;
 
-        if (!imageName)
+        if (!imageId)
             return next({
                 status: 400,
-                message: "Please supply image name.",
+                message: "Please supply image id.",
             });
+
+        const {
+            rows: [{ sizes }],
+        } = await pool.query(`SELECT sizes FROM images WHERE image_id=$1`, [
+            imageId,
+        ]);
 
         try {
             await pool.query(
                 `
-                    DELETE FROM images WHERE image_name=$1
+                    DELETE FROM images WHERE image_id=$1
                     `,
-                [imageName]
+                [imageId]
             );
         } catch (err) {
             return next({
@@ -101,12 +149,14 @@ export async function deleteImage(
             });
         }
 
-        await s3
-            .deleteObject({
-                Bucket: Config.aws.bucketName,
-                Key: imageName as string,
-            })
-            .promise();
+        for (const imageName of Object.values(sizes)) {
+            await s3
+                .deleteObject({
+                    Bucket: Config.aws.bucketName,
+                    Key: imageName as string,
+                })
+                .promise();
+        }
 
         return res
             .status(200)
@@ -126,7 +176,7 @@ export async function getImages(
             `
             SELECT
                 i.image_id,
-                i.image_name,
+                i.sizes,
                 i.image_description,
                 i.created_at
             FROM images i

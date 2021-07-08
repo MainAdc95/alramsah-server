@@ -4,7 +4,7 @@ export type ImageFormat = "png" | "svg" | "jpeg";
 
 export interface IImage {
     image_id: string;
-    image_name: string;
+    sizes: { s: string; m: string; l: string };
     image_description: string;
     updated_by: IUser;
     updated_at: Date;
