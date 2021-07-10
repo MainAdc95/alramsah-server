@@ -4,7 +4,7 @@ CREATE DATABASE alramsah;
 CREATE TABLE IF NOT EXISTS user_images (
     image_id uuid PRIMARY KEY NOT NULL,
     image_name VARCHAR(255) NOT NULL UNIQUE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 INSERT INTO user_images (
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS users (
     phone VARCHAR(255) NOT NULL,
     version INT,
     password VARCHAR(255) NOT NULL,
-    last_logged_in TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_logged_in TIMESTAMPTZ DEFAULT NOW(),
     user_order SERIAL NOT NULL,
     is_super_admin BOOLEAN NOT NULL DEFAULT FALSE,
     is_admin BOOLEAN NOT NULL DEFAULT FALSE,
@@ -31,8 +31,8 @@ CREATE TABLE IF NOT EXISTS users (
     is_active BOOLEAN NOT NULL DEFAULT FALSE,
     is_blocked BOOLEAN NOT NULL DEFAULT FALSE,
     updated_by uuid REFERENCES users(user_id),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 ALTER TABLE IF EXISTS user_images
@@ -44,21 +44,32 @@ CREATE TABLE IF NOT EXISTS images (
     sizes JSONB,
     image_description TEXT,
     created_by uuid NOT NULL REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- ALTER TABLE images ADD sizes JSONB;
 -- ALTER TABLE images DROP COLUMN image_name;
+
+CREATE TABLE IF NOT EXISTS files (
+    file_id uuid PRIMARY KEY,
+    text TEXT NOT NULL,
+    image_id uuid REFERENCES images(image_id) ON UPDATE CASCADE,
+    created_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
+    updated_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
 
 CREATE TABLE IF NOT EXISTS sections (
     section_id uuid PRIMARY KEY,
     section_name TEXT NOT NULL,
     color VARCHAR(255),
     section_order SERIAL NOT NULL,
+    is_archived BOOLEAN DEFAULT FALSE,
     created_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
     updated_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- ALTER TABLE sections
@@ -80,14 +91,14 @@ CREATE TABLE IF NOT EXISTS tags (
     tag_order SERIAL NOT NULL,
     created_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
     updated_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS articles (
     article_id uuid PRIMARY KEY,
     thumbnail uuid REFERENCES images(image_id) ON DELETE NO ACTION ON UPDATE CASCADE,
-    intro TEXT NOT NULL,
+    intro TEXT,
     title TEXT NOT NULL,
     text TEXT NOT NULL,
     sub_titles JSONB NULL,
@@ -96,32 +107,54 @@ CREATE TABLE IF NOT EXISTS articles (
     readers INT,
     created_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
     updated_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW() 
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW() 
+);
+
+CREATE TABLE IF NOT EXISTS article_image (
+    article_id uuid NOT NULL REFERENCES articles(article_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    image_id uuid NOT NULL REFERENCES images(image_id) ON UPDATE CASCADE,
+    CONSTRAINT article_image_pkey PRIMARY KEY (article_id, image_id)
+);
+
+CREATE TABLE IF NOT EXISTS article_tag (
+    article_id uuid NOT NULL REFERENCES articles(article_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    tag_id uuid NOT NULL REFERENCES tags(tag_id) ON UPDATE CASCADE,
+    CONSTRAINT article_tag_pkey PRIMARY KEY (article_id, tag_id)
 );
 
 CREATE TABLE IF NOT EXISTS news (
     news_id uuid PRIMARY KEY,
     thumbnail uuid REFERENCES images(image_id) ON DELETE NO ACTION ON UPDATE CASCADE,
-    intro TEXT NOT NULL,
+    intro TEXT,
     title TEXT NOT NULL,
     text TEXT NOT NULL,
     sub_titles JSONB NULL,
     section uuid REFERENCES sections(section_id) ON DELETE NO ACTION ON UPDATE CASCADE,
-    is_published BOOLEAN DEFAULT FALSE,
-    news_order SERIAL NOT NULL,
     readers INT,
+    file uuid REFERENCES files(file_id) ON DELETE NO ACTION ON UPDATE CASCADE,
+    is_published BOOLEAN DEFAULT FALSE,
+    is_archived BOOLEAN DEFAULT FALSE,
     created_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
     updated_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- ALTER TABLE news DROP COLUMN news_order;
+
+-- ALTER TABLE news DROP COLUMN intro;
+-- ALTER TABLE news ADD intro TEXT;
+
+-- ALTER TABLE news ADD is_archived BOOLEAN DEFAULT FALSE;
 
 -- ALTER TABLE news
 -- ADD readers INT;
 
 -- ALTER TABLE news
 -- ADD thumbnail uuid REFERENCES images(image_id) ON DELETE NO ACTION ON UPDATE CASCADE;
+
+-- ALTER TABLE news ADD file uuid REFERENCES files(file_id) ON DELETE NO ACTION ON UPDATE CASCADE;
 
 CREATE TABLE IF NOT EXISTS news_image (
     news_id uuid NOT NULL REFERENCES news(news_id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -135,6 +168,18 @@ CREATE TABLE IF NOT EXISTS news_tag (
     CONSTRAINT news_tag_pkey PRIMARY KEY (news_id, tag_id)
 );
 
+CREATE TABLE IF NOT EXISTS strips (
+    strip_id uuid PRIMARY KEY,
+    title TEXT NOT NULL,
+    link TEXT,
+    duration VARCHAR(255) NOT NULL,
+    type VARCHAR(255) NOT NULL,
+    created_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
+    updated_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS messages (
     message_id uuid PRIMARY KEY,
     subject TEXT NOT NULL,
@@ -143,7 +188,7 @@ CREATE TABLE IF NOT EXISTS messages (
     is_viewed BOOLEAN DEFAULT FALSE,
     message_order SERIAL NOT NULL,
     created_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS message_image (
@@ -156,7 +201,7 @@ CREATE TABLE IF NOT EXISTS privacy_policy (
     privacy_policy_id BOOLEAN PRIMARY KEY DEFAULT TRUE,
     text TEXT NOT NULL,
     updated_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
     CONSTRAINT privacy_policy_id CHECK (privacy_policy_id)
 );
 

@@ -15,6 +15,9 @@ import sectionRoutes from "./routes/section";
 import tagRoutes from "./routes/tag";
 import newsRoutes from "./routes/news";
 import messageRoutes from "./routes/message";
+import articleRoutes from "./routes/article";
+import stripRoutes from "./routes/strip";
+import fileRoutes from "./routes/file";
 
 // server setup
 const app = express();
@@ -49,6 +52,9 @@ app.use("/api", newsRoutes);
 app.use("/api", sectionRoutes);
 app.use("/api", tagRoutes);
 app.use("/api", messageRoutes);
+app.use("/api", articleRoutes);
+app.use("/api", stripRoutes);
+app.use("/api", fileRoutes);
 
 // 404 route
 app.use((req, res, next) => {

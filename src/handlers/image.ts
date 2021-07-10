@@ -49,10 +49,6 @@ export async function addImages(
                             mozjpeg: format === "jpeg",
                         });
                     } else {
-                        console.log({
-                            height: size === "m" ? height / 2 : height / 2 / 2,
-                            width: size === "m" ? width / 2 : width / 2 / 2,
-                        });
                         file = await sharp(buffer)
                             .resize({
                                 height:

@@ -20,9 +20,9 @@ const newsQuery = (
                 n.title,
                 n.text,
                 n.sub_titles,
+                n.is_archived,
                 n.updated_at,
                 n.created_at,
-                n.news_order,
                 n.is_published,
                 jsonb_build_object (
                     'user_id', cb.user_id,
@@ -42,12 +42,29 @@ const newsQuery = (
                 CASE WHEN COUNT(tn)=0 THEN null ELSE jsonb_build_object (
                     'image_id', tn.image_id,
                     'sizes', tn.sizes
-                ) END as thumbnail
+                ) END as thumbnail,
+                CASE WHEN COUNT(f)=0 THEN null ELSE jsonb_build_object (
+                    'file_id', f.file_id,
+                    'text', f.text,
+                    'image', f.image
+                ) END as file
             FROM news n
                 LEFT JOIN users cb ON cb.user_id=n.created_by
                 LEFT JOIN users ub ON ub.user_id=n.updated_by
                 LEFT JOIN sections s ON s.section_id=n.section
                 LEFT JOIN images tn ON tn.image_id=n.thumbnail
+                LEFT JOIN (
+                    SELECT
+                        f.file_id,
+                        f.text,
+                        jsonb_build_object (
+                            'image_id', i.image_id,
+                            'sizes', i.sizes
+                        ) as image
+                    FROM files f
+                        LEFT JOIN images i ON i.image_id=f.image_id
+                ) as f
+                    ON f.file_id=n.file
                 LEFT JOIN (
                     SELECT
                         nt.news_id,
@@ -71,7 +88,7 @@ const newsQuery = (
                 ) as i
                     ON i.news_id=n.news_id
             ${filter || ""}
-            GROUP BY n.news_id, cb.user_id, ub.user_id, s.section_id, tn.image_id
+            GROUP BY n.news_id, cb.user_id, ub.user_id, s.section_id, tn.image_id, f.file_id, f.text, f.image
             ${order || "ORDER BY n.created_at desc"}
             ${limit || "LIMIT 100"}
             ${offset || ""}
@@ -124,9 +141,9 @@ export async function getAllNews(
                     ? `n.news_id IN (select news_id from news_tag WHERE tag_id='${tag}') AND`
                     : ""
             }
-            is_published=${type === "published" ? true : false} ${
-                sectionId ? `AND section='${sectionId}'` : ""
-            }`
+            is_published=${type === "published" ? true : false} AND
+            is_archived=${type === "archived" ? true : false}
+            ${sectionId ? `AND section='${sectionId}'` : ""}`
         );
 
         count = Number(count);
@@ -141,7 +158,8 @@ export async function getAllNews(
                             ? `n.news_id IN (select news_id from news_tag WHERE tag_id='${tag}') AND`
                             : ""
                     }
-                    ${`is_published=${type === "published" ? true : false}`}
+                    is_published=${type === "published" ? true : false} AND
+                    is_archived=${type === "archived" ? true : false}
                     `
                     : "",
                 "",
@@ -167,6 +185,7 @@ export async function addNews(req: Request, res: Response, next: NextFunction) {
             title,
             text,
             section,
+            file,
             images,
             tags,
             subTitles,
@@ -190,12 +209,13 @@ export async function addNews(req: Request, res: Response, next: NextFunction) {
                 title,
                 text,
                 section,
+                file,
                 sub_titles,
                 created_by,
                 updated_by,
                 created_at,
                 updated_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         `,
             [
                 newsId,
@@ -204,6 +224,7 @@ export async function addNews(req: Request, res: Response, next: NextFunction) {
                 title,
                 text,
                 section,
+                file,
                 JSON.stringify(
                     subTitles?.map((s: any) => ({
                         sub_title_id: uuid(),
@@ -262,6 +283,7 @@ export async function editNews(
             title,
             text,
             section,
+            file,
             images,
             tags,
             subTitles,
@@ -286,8 +308,9 @@ export async function editNews(
                     sub_titles=$5,
                     updated_by=$6,
                     updated_at=$7,
-                    thumbnail=$8
-                WHERE news_id=$9
+                    thumbnail=$8,
+                    file=$9
+                WHERE news_id=$10
                 `,
             [
                 intro,
@@ -303,6 +326,7 @@ export async function editNews(
                 authId,
                 date,
                 (thumbnail as IImage).image_id,
+                file,
                 newsId,
             ]
         );
@@ -440,7 +464,7 @@ export async function editNews(
     }
 }
 
-export async function deleteNews(
+export async function permanentlyDeleteNews(
     req: Request,
     res: Response,
     next: NextFunction
@@ -458,6 +482,27 @@ export async function deleteNews(
     }
 }
 
+export async function archiveNews(
+    req: Request,
+    res: Response,
+    next: NextFunction
+) {
+    try {
+        const { newsId } = req.params;
+
+        await pool.query(
+            `UPDATE news SET is_archived=true, is_published=false WHERE news_id=$1`,
+            [newsId]
+        );
+
+        return res
+            .status(200)
+            .json({ message: "You have successfully arhived a news." });
+    } catch (err) {
+        return next(err);
+    }
+}
+
 export async function publishNews(
     req: Request,
     res: Response,
@@ -470,7 +515,8 @@ export async function publishNews(
             `
             UPDATE news
             SET
-                is_published=true
+                is_published=true,
+                is_archived=false
             WHERE news_id=$1
             `,
             [newsId]
@@ -503,7 +549,7 @@ export async function homeInfo(
             ORDER BY s.section_order ASC
             `
             );
-        console.log(sections);
+
         for (let section of sections) {
             const { rows: news } = await pool.query(
                 `

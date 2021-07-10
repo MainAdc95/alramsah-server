@@ -3,9 +3,10 @@ import {
     getNews,
     addNews,
     editNews,
-    deleteNews,
+    permanentlyDeleteNews,
     getAllNews,
     publishNews,
+    archiveNews,
     homeInfo,
 } from "../handlers/news";
 import { isLoggedIn } from "../middlewares/auth";
@@ -25,6 +26,8 @@ router.put("/news/publish_news/:newsId", isLoggedIn, isAdmin, publishNews);
 
 router.put("/news/:newsId", isLoggedIn, isAdmin, editNews);
 
-router.delete("/news/:newsId", isLoggedIn, isAdmin, deleteNews);
+router.delete("/news/:newsId", isLoggedIn, isAdmin, permanentlyDeleteNews);
+
+router.put("/news/archive/:newsId", isLoggedIn, isAdmin, archiveNews);
 
 export default router;

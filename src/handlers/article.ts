@@ -19,9 +19,9 @@ const articleQuery = (
                 a.title,
                 a.text,
                 a.sub_titles,
+                a.is_archived,
                 a.updated_at,
                 a.created_at,
-                a.article_order,
                 a.is_published,
                 jsonb_build_object (
                     'user_id', cb.user_id,
@@ -127,14 +127,14 @@ export async function getArticles(
                     ? `a.article_id IN (select article_id from article_tag WHERE tag_id='${tag}') AND`
                     : ""
             }
-            is_published=${type === "published" ? true : false} ${
-                sectionId ? `AND section='${sectionId}'` : ""
-            }`
+            is_published=${type === "published" ? true : false} AND
+            is_archived=${type === "archived" ? true : false}
+            ${sectionId ? `AND section='${sectionId}'` : ""}`
         );
 
         count = Number(count);
 
-        const { rows: article }: QueryResult<IArticle> = await pool.query(
+        const { rows: articles }: QueryResult<IArticle> = await pool.query(
             articleQuery(
                 p
                     ? `WHERE
@@ -144,7 +144,8 @@ export async function getArticles(
                             ? `a.article_id IN (select article_id from article_tag WHERE tag_id='${tag}') AND`
                             : ""
                     }
-                    ${`is_published=${type === "published" ? true : false}`}
+                    is_published=${type === "published" ? true : false} AND
+                    is_archived=${type === "archived" ? true : false}
                     `
                     : "",
                 "",
@@ -155,7 +156,7 @@ export async function getArticles(
 
         return res.status(200).json({
             results: count,
-            article,
+            articles,
         });
     } catch (err) {
         return next(err);
@@ -190,7 +191,7 @@ export async function addArticle(
         // ______________________________ add article
         await pool.query(
             `
-            INSERT INTO article (
+            INSERT INTO articles (
                 article_id,
                 thumbnail,
                 intro,
@@ -284,7 +285,7 @@ export async function editArticle(
         // ______________________________ edit article
         await pool.query(
             `
-                UPDATE article 
+                UPDATE articles 
                 SET
                     intro=$1,
                     title=$2,
@@ -447,7 +448,7 @@ export async function editArticle(
     }
 }
 
-export async function deleteArticle(
+export async function permanentlyDeleteArticle(
     req: Request,
     res: Response,
     next: NextFunction
@@ -467,6 +468,27 @@ export async function deleteArticle(
     }
 }
 
+export async function archiveArticle(
+    req: Request,
+    res: Response,
+    next: NextFunction
+) {
+    try {
+        const { articleId } = req.params;
+
+        await pool.query(
+            `UPDATE articles SET is_archived=true, is_published=false WHERE article_id=$1`,
+            [articleId]
+        );
+
+        return res
+            .status(200)
+            .json({ message: "You have successfully arhived a article." });
+    } catch (err) {
+        return next(err);
+    }
+}
+
 export async function publishArticle(
     req: Request,
     res: Response,
@@ -477,9 +499,10 @@ export async function publishArticle(
 
         await pool.query(
             `
-            UPDATE article
+            UPDATE articles
             SET
-                is_published=true
+                is_published=true,
+                is_archived=false
             WHERE article_id=$1
             `,
             [articleId]
