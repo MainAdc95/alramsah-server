@@ -589,7 +589,35 @@ export async function homeInfo(
             section.news = news;
         }
 
-        return res.status(200).json({ sections });
+        const { rows: strips } = await pool.query(
+            `
+            SELECT
+                s.strip_id,
+                s.title,
+                s.duration,
+                s.link,
+                s.type,
+                s.created_at
+            FROM strips s
+            `
+        );
+
+        const { rows: files } = await pool.query(
+            `
+            SELECT
+                f.file_id,
+                f.text,
+                f.created_at,
+                jsonb_build_object (
+                    'image_id', i.image_id,
+                    'sizes', i.sizes
+                ) as image
+            FROM files f
+                LEFT JOIN images i ON i.image_id=f.image_id
+            `
+        );
+
+        return res.status(200).json({ sections, strips, files });
     } catch (err) {
         return next(err);
     }
