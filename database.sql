@@ -127,9 +127,9 @@ CREATE TABLE IF NOT EXISTS news (
     news_id uuid PRIMARY KEY,
     thumbnail uuid REFERENCES images(image_id) ON DELETE NO ACTION ON UPDATE CASCADE,
     intro TEXT,
-    title TEXT NOT NULL,
-    text TEXT NOT NULL,
-    sub_titles JSONB NULL,
+    title TEXT,
+    text TEXT,
+    sub_titles JSONB,
     section uuid REFERENCES sections(section_id) ON DELETE NO ACTION ON UPDATE CASCADE,
     readers INT,
     file uuid REFERENCES files(file_id) ON DELETE NO ACTION ON UPDATE CASCADE,
@@ -141,20 +141,9 @@ CREATE TABLE IF NOT EXISTS news (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ALTER TABLE news DROP COLUMN news_order;
-
--- ALTER TABLE news DROP COLUMN intro;
--- ALTER TABLE news ADD intro TEXT;
-
--- ALTER TABLE news ADD is_archived BOOLEAN DEFAULT FALSE;
-
--- ALTER TABLE news
--- ADD readers INT;
-
--- ALTER TABLE news
--- ADD thumbnail uuid REFERENCES images(image_id) ON DELETE NO ACTION ON UPDATE CASCADE;
-
--- ALTER TABLE news ADD file uuid REFERENCES files(file_id) ON DELETE NO ACTION ON UPDATE CASCADE;
+ALTER TABLE news ALTER column intro TEXT drop not null;
+ALTER TABLE news ALTER column title TEXT drop not null;
+ALTER TABLE news ALTER column text TEXT drop not null;
 
 CREATE TABLE IF NOT EXISTS news_image (
     news_id uuid NOT NULL REFERENCES news(news_id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -208,3 +197,12 @@ CREATE TABLE IF NOT EXISTS privacy_policy (
 INSERT INTO privacy_policy (
     text
 ) VALUES ('');
+
+
+-- SELECT con.*
+--        FROM pg_catalog.pg_constraint con
+--             INNER JOIN pg_catalog.pg_class rel
+--                        ON rel.oid = con.conrelid
+--             INNER JOIN pg_catalog.pg_namespace nsp
+--                        ON nsp.oid = connamespace
+--              AND rel.relname = 'news';

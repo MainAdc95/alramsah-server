@@ -190,6 +190,7 @@ export async function addNews(req: Request, res: Response, next: NextFunction) {
             tags,
             subTitles,
             thumbnail,
+            is_published,
         } = req.body;
 
         title = String(title).trim();
@@ -203,66 +204,74 @@ export async function addNews(req: Request, res: Response, next: NextFunction) {
         await pool.query(
             `
             INSERT INTO news (
+                ${thumbnail ? "thumbnail, " : ""}
                 news_id,
-                thumbnail,
                 intro,
                 title,
                 text,
-                section,
-                file,
                 sub_titles,
                 created_by,
                 updated_by,
                 created_at,
-                updated_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                updated_at,
+                is_published
+                ${section ? `, ${section}` : ""}
+                ${file ? `, ${file}` : ""}
+            ) VALUES (${
+                thumbnail ? `'${thumbnail.image_id}',` : ""
+            } $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+            ${section ? `, '${section}'` : ""}
+            ${file ? `, '${file}'` : ""}
+            )
         `,
             [
                 newsId,
-                (thumbnail as IImage).image_id,
                 intro,
                 title,
                 text,
-                section,
-                file,
                 JSON.stringify(
-                    subTitles?.map((s: any) => ({
-                        sub_title_id: uuid(),
-                        sub_title: s.sub_title,
-                    }))
+                    subTitles?.length
+                        ? subTitles?.map((s: any) => ({
+                              sub_title_id: uuid(),
+                              sub_title: s.sub_title,
+                          }))
+                        : []
                 ),
                 authId,
                 authId,
                 date,
                 date,
+                is_published,
             ]
         );
 
         // ________________________________ images
-        await pool.query(
-            format(
-                `
+        if (images?.length)
+            await pool.query(
+                format(
+                    `
                 INSERT INTO news_image (
                     news_id,
                     image_id
                 ) VALUES %L
                 `,
-                images.map((i: IImage) => [newsId, i.image_id])
-            )
-        );
+                    images.map((i: IImage) => [newsId, i.image_id])
+                )
+            );
 
         // ___________________________ tags
-        await pool.query(
-            format(
-                `
+        if (tags?.length)
+            await pool.query(
+                format(
+                    `
                 INSERT INTO news_tag (
                     news_id,
                     tag_id
                 ) VALUES %L
                 `,
-                tags.map((t: ITag) => [newsId, t.tag_id])
-            )
-        );
+                    tags.map((t: ITag) => [newsId, t.tag_id])
+                )
+            );
 
         return res.status(201).json("");
     } catch (err) {
@@ -304,159 +313,169 @@ export async function editNews(
                     intro=$1,
                     title=$2,
                     text=$3,
-                    section=$4,
-                    sub_titles=$5,
-                    updated_by=$6,
-                    updated_at=$7,
-                    thumbnail=$8,
-                    file=$9
-                WHERE news_id=$10
+                    sub_titles=$4,
+                    updated_by=$5,
+                    updated_at=$6
+                    ${section ? `, section='${section}'` : ""}
+                    ${thumbnail ? `, thumbnail='${thumbnail}'` : ""}
+                    ${file ? `, file='${file}'` : ""}
+                WHERE news_id=$7
                 `,
             [
                 intro,
                 title,
                 text,
-                section,
                 JSON.stringify(
-                    subTitles?.map((s: any) => ({
-                        sub_title_id: uuid(),
-                        sub_title: s.sub_title,
-                    }))
+                    subTitles?.length
+                        ? subTitles?.map((s: any) => ({
+                              sub_title_id: uuid(),
+                              sub_title: s.sub_title,
+                          }))
+                        : []
                 ),
                 authId,
                 date,
-                (thumbnail as IImage).image_id,
-                file,
                 newsId,
             ]
         );
 
         // ________________________________ news information
-        const {
-            rows: [info],
-        }: QueryResult<{ images: IImage[]; tags: ITag[] }> = await pool.query(
-            `
-            SELECT
-                CASE WHEN COUNT(t)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(DISTINCT t.tag) END as tags,
-                CASE WHEN COUNT(i)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(DISTINCT i.image) END as images
-            FROM news n
-                LEFT JOIN users cb ON cb.user_id=n.created_by
-                LEFT JOIN users ub ON ub.user_id=n.updated_by
-                LEFT JOIN sections s ON s.section_id=n.section
-                LEFT JOIN (
-                    SELECT
-                        nt.news_id,
-                        jsonb_build_object (
-                            'tag_id', t.tag_id,
-                            'tag_name', t.tag_name
-                        ) as tag
-                    FROM news_tag nt
-                        LEFT JOIN tags t ON t.tag_id=nt.tag_id
-                ) as t
-                    ON t.news_id=n.news_id
-                LEFT JOIN (
-                    SELECT
-                        ni.news_id,
-                        jsonb_build_object (
-                            'image_id', i.image_id,
-                            'sizes', i.sizes
-                        ) as image
-                    FROM news_image ni
-                        LEFT JOIN images i ON i.image_id=ni.image_id
-                ) as i
-                    ON i.news_id=n.news_id
-            WHERE n.news_id=$1
-            GROUP BY n.news_id, cb.user_id, ub.user_id, s.section_id
-            `,
-            [newsId]
-        );
-
-        // ________________________________ images
-        const delImgs: any = [];
-        const addImgs: any = [];
-
-        // add / delete logic
-        for (let image of images as IImage[]) {
-            const foundImg = info.images.find(
-                (i) => i.image_id === image.image_id
-            );
-
-            if (!foundImg) addImgs.push([newsId, image.image_id]);
-        }
-
-        for (let image of info.images) {
-            const foundImg = images.find(
-                (i: IImage) => i.image_id === image.image_id
-            );
-
-            if (!foundImg) delImgs.push([newsId, image.image_id]);
-        }
-
-        // add
-        if (addImgs.length)
-            await pool.query(
-                format(
+        if (images?.length || tags?.length) {
+            const {
+                rows: [info],
+            }: QueryResult<{ images: IImage[]; tags: ITag[] }> =
+                await pool.query(
                     `
-                INSERT INTO news_image (
-                    news_id,
-                    image_id
-                ) VALUES %L
+                SELECT
+                    CASE WHEN COUNT(t)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(DISTINCT t.tag) END as tags,
+                    CASE WHEN COUNT(i)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(DISTINCT i.image) END as images
+                FROM news n
+                    LEFT JOIN users cb ON cb.user_id=n.created_by
+                    LEFT JOIN users ub ON ub.user_id=n.updated_by
+                    LEFT JOIN sections s ON s.section_id=n.section
+                    LEFT JOIN (
+                        SELECT
+                            nt.news_id,
+                            jsonb_build_object (
+                                'tag_id', t.tag_id,
+                                'tag_name', t.tag_name
+                            ) as tag
+                        FROM news_tag nt
+                            LEFT JOIN tags t ON t.tag_id=nt.tag_id
+                    ) as t
+                        ON t.news_id=n.news_id
+                    LEFT JOIN (
+                        SELECT
+                            ni.news_id,
+                            jsonb_build_object (
+                                'image_id', i.image_id,
+                                'sizes', i.sizes
+                            ) as image
+                        FROM news_image ni
+                            LEFT JOIN images i ON i.image_id=ni.image_id
+                    ) as i
+                        ON i.news_id=n.news_id
+                WHERE n.news_id=$1
+                GROUP BY n.news_id, cb.user_id, ub.user_id, s.section_id
                 `,
-                    addImgs
-                )
-            );
+                    [newsId]
+                );
 
-        // delete
-        if (delImgs.length)
-            await pool.query(
-                format(
-                    `
-                DELETE FROM news_image WHERE (news_id, image_id) IN (%L)
-                `,
-                    delImgs
-                )
-            );
+            // ________________________________ images
+            if (images?.length) {
+                const delImgs: any = [];
+                const addImgs: any = [];
 
-        // ________________________________ tags
-        const delTags: any = [];
-        const addTags: any = [];
+                // add / delete logic
+                for (let image of images as IImage[]) {
+                    const foundImg = info.images.find(
+                        (i) => i.image_id === image.image_id
+                    );
 
-        // add / delete logic
-        for (let tag of tags as ITag[]) {
-            const foundTag = info.tags.find((t) => t.tag_id === tag.tag_id);
+                    if (!foundImg) addImgs.push([newsId, image.image_id]);
+                }
 
-            if (!foundTag) addTags.push([newsId, tag.tag_id]);
+                for (let image of info.images) {
+                    const foundImg = images.find(
+                        (i: IImage) => i.image_id === image.image_id
+                    );
+
+                    if (!foundImg) delImgs.push([newsId, image.image_id]);
+                }
+
+                // add
+                if (addImgs.length)
+                    await pool.query(
+                        format(
+                            `
+                        INSERT INTO news_image (
+                            news_id,
+                            image_id
+                        ) VALUES %L
+                        `,
+                            addImgs
+                        )
+                    );
+
+                // delete
+                if (delImgs.length)
+                    await pool.query(
+                        format(
+                            `
+                        DELETE FROM news_image WHERE (news_id, image_id) IN (%L)
+                        `,
+                            delImgs
+                        )
+                    );
+            }
+
+            // ________________________________ tags
+            if (tags?.length) {
+                const delTags: any = [];
+                const addTags: any = [];
+
+                // add / delete logic
+                for (let tag of tags as ITag[]) {
+                    const foundTag = info.tags.find(
+                        (t) => t.tag_id === tag.tag_id
+                    );
+
+                    if (!foundTag) addTags.push([newsId, tag.tag_id]);
+                }
+
+                for (let tag of info.tags) {
+                    const foundTag = tags.find(
+                        (i: ITag) => i.tag_id === tag.tag_id
+                    );
+                    if (!foundTag) delTags.push([newsId, tag.tag_id]);
+                }
+
+                // add
+                if (addTags.length)
+                    await pool.query(
+                        format(
+                            `
+                        INSERT INTO news_tag (
+                            news_id,
+                            tag_id
+                        ) VALUES %L
+                        `,
+                            addTags
+                        )
+                    );
+
+                // delete
+                if (delTags.length)
+                    await pool.query(
+                        format(
+                            `
+                        DELETE FROM news_tag WHERE (news_id, tag_id) IN (%L)
+                        `,
+                            delTags
+                        )
+                    );
+            }
         }
-
-        for (let tag of info.tags) {
-            const foundTag = tags.find((i: ITag) => i.tag_id === tag.tag_id);
-            if (!foundTag) delTags.push([newsId, tag.tag_id]);
-        }
-
-        // add
-        if (addTags.length)
-            await pool.query(
-                format(
-                    `
-                INSERT INTO news_tag (
-                    news_id,
-                    tag_id
-                ) VALUES %L
-                `,
-                    addTags
-                )
-            );
-
-        // delete
-        if (delTags.length)
-            await pool.query(
-                format(
-                    `
-                DELETE FROM news_tag WHERE (news_id, tag_id) IN (%L)
-                `,
-                    delTags
-                )
-            );
 
         return res.status(200).json("");
     } catch (err) {

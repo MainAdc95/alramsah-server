@@ -59,5 +59,5 @@ const Config = {
     //     pk: process.env.STRIPE_PUBLIC_KEY,
     // },
 };
-
+console.log(Config);
 export default Config;

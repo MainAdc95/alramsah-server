@@ -119,9 +119,11 @@ export async function addTag(req: Request, res: Response, next: NextFunction) {
             [tagId, tag_name, date, date, authId, authId]
         );
 
-        return res
-            .status(200)
-            .json({ message: "You have succesfully added a tag." });
+        const {
+            rows: [tag],
+        } = await pool.query(query("WHERE t.tag_id=$1", "", ""), [tagId]);
+
+        return res.status(200).json(tag);
     } catch (err) {
         return next(err);
     }
