@@ -179,6 +179,7 @@ export async function addArticle(
             tags,
             subTitles,
             thumbnail,
+            is_published,
         } = req.body;
 
         title = String(title).trim();
@@ -192,64 +193,72 @@ export async function addArticle(
         await pool.query(
             `
             INSERT INTO articles (
+                ${thumbnail ? "thumbnail, " : ""}
                 article_id,
-                thumbnail,
                 intro,
                 title,
                 text,
-                section,
                 sub_titles,
                 created_by,
                 updated_by,
                 created_at,
-                updated_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                updated_at,
+                is_published
+                ${section ? `, section` : ""}
+            ) VALUES (${
+                thumbnail ? `'${thumbnail.image_id}',` : ""
+            } $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+            ${section ? `, '${section}'` : ""}
+            )
         `,
             [
                 articleId,
-                (thumbnail as IImage).image_id,
                 intro,
                 title,
                 text,
-                section,
                 JSON.stringify(
-                    subTitles?.map((s: any) => ({
-                        sub_title_id: uuid(),
-                        sub_title: s.sub_title,
-                    }))
+                    subTitles?.length
+                        ? subTitles?.map((s: any) => ({
+                              sub_title_id: uuid(),
+                              sub_title: s.sub_title,
+                          }))
+                        : []
                 ),
                 authId,
                 authId,
                 date,
                 date,
+                is_published,
             ]
         );
 
         // ________________________________ images
-        await pool.query(
-            format(
-                `
+        if (images?.length)
+            await pool.query(
+                format(
+                    `
                 INSERT INTO article_image (
                     article_id,
                     image_id
                 ) VALUES %L
                 `,
-                images.map((i: IImage) => [articleId, i.image_id])
-            )
-        );
+                    images.map((i: IImage) => [articleId, i.image_id])
+                )
+            );
 
         // ___________________________ tags
-        await pool.query(
-            format(
-                `
+        if (tags?.length)
+            await pool.query(
+                format(
+                    `
                 INSERT INTO article_tag (
                     article_id,
                     tag_id
                 ) VALUES %L
                 `,
-                tags.map((t: ITag) => [articleId, t.tag_id])
-            )
-        );
+                    tags.map((t: ITag) => [articleId, t.tag_id])
+                )
+            );
 
         return res.status(201).json("");
     } catch (err) {
@@ -283,6 +292,7 @@ export async function editArticle(
         const date = new Date();
 
         // ______________________________ edit article
+
         await pool.query(
             `
                 UPDATE articles 
@@ -290,36 +300,39 @@ export async function editArticle(
                     intro=$1,
                     title=$2,
                     text=$3,
-                    section=$4,
-                    sub_titles=$5,
-                    updated_by=$6,
-                    updated_at=$7,
-                    thumbnail=$8
-                WHERE article_id=$9
+                    sub_titles=$4,
+                    updated_by=$5,
+                    updated_at=$6
+                    ${section ? `, section='${section}'` : ""}
+                    ${thumbnail ? `, thumbnail='${thumbnail.image_id}'` : ""}
+                WHERE article_id=$7
                 `,
             [
                 intro,
                 title,
                 text,
-                section,
                 JSON.stringify(
-                    subTitles?.map((s: any) => ({
-                        sub_title_id: uuid(),
-                        sub_title: s.sub_title,
-                    }))
+                    subTitles?.length
+                        ? subTitles?.map((s: any) => ({
+                              sub_title_id: uuid(),
+                              sub_title: s.sub_title,
+                          }))
+                        : []
                 ),
                 authId,
                 date,
-                (thumbnail as IImage).image_id,
                 articleId,
             ]
         );
 
         // ________________________________ article information
-        const {
-            rows: [info],
-        }: QueryResult<{ images: IImage[]; tags: ITag[] }> = await pool.query(
-            `
+
+        if (images?.length || tags?.length) {
+            const {
+                rows: [info],
+            }: QueryResult<{ images: IImage[]; tags: ITag[] }> =
+                await pool.query(
+                    `
             SELECT
                 CASE WHEN COUNT(t)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(DISTINCT t.tag) END as tags,
                 CASE WHEN COUNT(i)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(DISTINCT i.image) END as images
@@ -352,95 +365,98 @@ export async function editArticle(
             WHERE a.article_id=$1
             GROUP BY a.article_id, cb.user_id, ub.user_id, s.section_id
             `,
-            [articleId]
-        );
+                    [articleId]
+                );
 
-        // ________________________________ images
-        const delImgs: any = [];
-        const addImgs: any = [];
+            // ________________________________ images
+            const delImgs: any = [];
+            const addImgs: any = [];
 
-        // add / delete logic
-        for (let image of images as IImage[]) {
-            const foundImg = info.images.find(
-                (i) => i.image_id === image.image_id
-            );
+            // add / delete logic
+            for (let image of images as IImage[]) {
+                const foundImg = info.images.find(
+                    (i) => i.image_id === image.image_id
+                );
 
-            if (!foundImg) addImgs.push([articleId, image.image_id]);
-        }
+                if (!foundImg) addImgs.push([articleId, image.image_id]);
+            }
 
-        for (let image of info.images) {
-            const foundImg = images.find(
-                (i: IImage) => i.image_id === image.image_id
-            );
+            for (let image of info.images) {
+                const foundImg = images.find(
+                    (i: IImage) => i.image_id === image.image_id
+                );
 
-            if (!foundImg) delImgs.push([articleId, image.image_id]);
-        }
+                if (!foundImg) delImgs.push([articleId, image.image_id]);
+            }
 
-        // add
-        if (addImgs.length)
-            await pool.query(
-                format(
-                    `
+            // add
+            if (addImgs.length)
+                await pool.query(
+                    format(
+                        `
                 INSERT INTO article_image (
                     article_id,
                     image_id
                 ) VALUES %L
                 `,
-                    addImgs
-                )
-            );
+                        addImgs
+                    )
+                );
 
-        // delete
-        if (delImgs.length)
-            await pool.query(
-                format(
-                    `
+            // delete
+            if (delImgs.length)
+                await pool.query(
+                    format(
+                        `
                 DELETE FROM article_image WHERE (article_id, image_id) IN (%L)
                 `,
-                    delImgs
-                )
-            );
+                        delImgs
+                    )
+                );
 
-        // ________________________________ tags
-        const delTags: any = [];
-        const addTags: any = [];
+            // ________________________________ tags
+            const delTags: any = [];
+            const addTags: any = [];
 
-        // add / delete logic
-        for (let tag of tags as ITag[]) {
-            const foundTag = info.tags.find((t) => t.tag_id === tag.tag_id);
+            // add / delete logic
+            for (let tag of tags as ITag[]) {
+                const foundTag = info.tags.find((t) => t.tag_id === tag.tag_id);
 
-            if (!foundTag) addTags.push([articleId, tag.tag_id]);
-        }
+                if (!foundTag) addTags.push([articleId, tag.tag_id]);
+            }
 
-        for (let tag of info.tags) {
-            const foundTag = tags.find((i: ITag) => i.tag_id === tag.tag_id);
-            if (!foundTag) delTags.push([articleId, tag.tag_id]);
-        }
+            for (let tag of info.tags) {
+                const foundTag = tags.find(
+                    (i: ITag) => i.tag_id === tag.tag_id
+                );
+                if (!foundTag) delTags.push([articleId, tag.tag_id]);
+            }
 
-        // add
-        if (addTags.length)
-            await pool.query(
-                format(
-                    `
+            // add
+            if (addTags.length)
+                await pool.query(
+                    format(
+                        `
                 INSERT INTO article_tag (
                     article_id,
                     tag_id
                 ) VALUES %L
                 `,
-                    addTags
-                )
-            );
+                        addTags
+                    )
+                );
 
-        // delete
-        if (delTags.length)
-            await pool.query(
-                format(
-                    `
+            // delete
+            if (delTags.length)
+                await pool.query(
+                    format(
+                        `
                 DELETE FROM article_tag WHERE (article_id, tag_id) IN (%L)
                 `,
-                    delTags
-                )
-            );
+                        delTags
+                    )
+                );
+        }
 
         return res.status(200).json("");
     } catch (err) {

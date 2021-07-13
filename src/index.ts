@@ -1,6 +1,7 @@
 import express from "express";
 import cors, { CorsOptions } from "cors";
 import cookieParser from "cookie-parser";
+import rssParser from "rss-parser";
 
 // handlers
 import errorHandler from "./handlers/error";
@@ -55,6 +56,20 @@ app.use("/api", messageRoutes);
 app.use("/api", articleRoutes);
 app.use("/api", stripRoutes);
 app.use("/api", fileRoutes);
+
+app.get("/api/rss/:url(*)", async (req, res, next) => {
+    try {
+        const { url } = req.params;
+
+        let parser = new rssParser();
+
+        let feed = await parser.parseURL(url);
+
+        return res.status(200).json(feed);
+    } catch (err) {
+        return next(err);
+    }
+});
 
 // 404 route
 app.use((req, res, next) => {

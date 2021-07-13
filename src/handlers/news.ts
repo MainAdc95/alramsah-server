@@ -215,8 +215,8 @@ export async function addNews(req: Request, res: Response, next: NextFunction) {
                 created_at,
                 updated_at,
                 is_published
-                ${section ? `, ${section}` : ""}
-                ${file ? `, ${file}` : ""}
+                ${section ? `, section` : ""}
+                ${file ? `, file` : ""}
             ) VALUES (${
                 thumbnail ? `'${thumbnail.image_id}',` : ""
             } $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
@@ -317,7 +317,7 @@ export async function editNews(
                     updated_by=$5,
                     updated_at=$6
                     ${section ? `, section='${section}'` : ""}
-                    ${thumbnail ? `, thumbnail='${thumbnail}'` : ""}
+                    ${thumbnail ? `, thumbnail='${thumbnail.image_id}'` : ""}
                     ${file ? `, file='${file}'` : ""}
                 WHERE news_id=$7
                 `,
