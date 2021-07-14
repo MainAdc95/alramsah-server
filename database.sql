@@ -7,10 +7,13 @@ CREATE TABLE IF NOT EXISTS user_images (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+ALTER TABLE user_images DROP COLUMN image_name;
+ALTER TABLE user_images ADD sizes JSONB;
+
 INSERT INTO user_images (
     image_id,
-    image_name
-) VALUES ('e5daee20-3122-4481-9898-4682624fae09', 'prof.png');
+    sizes
+) VALUES ('2d06f735-f13c-4142-803b-6834648fed2d', '{ "s": "prof.png", "m": "prof.png", "l": "prof.png"}');
 
 CREATE TABLE IF NOT EXISTS users (
     user_id uuid PRIMARY KEY,
@@ -197,7 +200,6 @@ CREATE TABLE IF NOT EXISTS privacy_policy (
 INSERT INTO privacy_policy (
     text
 ) VALUES ('');
-
 
 -- SELECT con.*
 --        FROM pg_catalog.pg_constraint con

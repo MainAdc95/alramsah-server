@@ -29,7 +29,7 @@ const userQuery = (filter?: string, order?: string, limit?: string) => `
                 u.updated_at,
                 jsonb_build_object (
                     'image_id', ui.image_id,
-                    'image_id', ui.image_id
+                    'sizes', ui.sizes
                 ) as avatar
             FROM users u
                 LEFT JOIN users uu ON u.user_id=uu.user_id

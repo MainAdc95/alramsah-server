@@ -175,7 +175,7 @@ export async function signup(req: Request, res: Response, next: NextFunction) {
             `,
             [
                 userId,
-                "e5daee20-3122-4481-9898-4682624fae09",
+                "2d06f735-f13c-4142-803b-6834648fed2d",
                 username,
                 first_name,
                 last_name,

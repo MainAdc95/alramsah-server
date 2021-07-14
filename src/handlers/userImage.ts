@@ -111,7 +111,7 @@ export async function getUserImages(
             `
             SELECT
                 image_id,
-                image_name,
+                sizes,
                 ui.created_at
             FROM user_images ui
                 LEFT JOIN users u ON u.user_id=ui.user_id
