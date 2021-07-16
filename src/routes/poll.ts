@@ -6,6 +6,7 @@ import {
     editPoll,
     deletePoll,
     getActivePoll,
+    vote,
 } from "../handlers/poll";
 import { isLoggedIn } from "../middlewares/auth";
 import { isAdmin } from "../middlewares/roles";
@@ -23,5 +24,7 @@ router.post("/polls", isLoggedIn, isAdmin, addPoll);
 router.put("/poll/:pollId", isLoggedIn, isAdmin, editPoll);
 
 router.delete("/poll/:pollId", isLoggedIn, isAdmin, deletePoll);
+
+router.post("/poll/vote/:optionId", vote);
 
 export default router;

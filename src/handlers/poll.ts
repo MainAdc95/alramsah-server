@@ -292,3 +292,18 @@ export async function deletePoll(
         return next(err);
     }
 }
+
+export async function vote(req: Request, res: Response, next: NextFunction) {
+    try {
+        const { optionId } = req.params;
+
+        await pool.query(
+            `UPDATE poll_options SET votes = votes + 1 WHERE option_id=$1`,
+            [optionId]
+        );
+
+        return res.status(200).json("");
+    } catch (err) {
+        return next(err);
+    }
+}
