@@ -19,6 +19,7 @@ import messageRoutes from "./routes/message";
 import articleRoutes from "./routes/article";
 import stripRoutes from "./routes/strip";
 import fileRoutes from "./routes/file";
+import pollRoutes from "./routes/poll";
 
 // server setup
 const app = express();
@@ -56,6 +57,7 @@ app.use("/api", messageRoutes);
 app.use("/api", articleRoutes);
 app.use("/api", stripRoutes);
 app.use("/api", fileRoutes);
+app.use("/api", pollRoutes);
 
 app.get("/api/rss/:url(*)", async (req, res, next) => {
     try {

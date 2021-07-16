@@ -11,6 +11,7 @@ const query = (filter: string, order: string) => `
                 s.color,
                 s.updated_at,
                 s.created_at,
+                s.section_order,
                 jsonb_build_object (
                     'user_id', cb.user_id,
                     'username', cb.username

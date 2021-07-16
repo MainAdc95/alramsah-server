@@ -75,9 +75,6 @@ CREATE TABLE IF NOT EXISTS sections (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ALTER TABLE sections
--- ADD section_order SERIAL NOT NULL;
-
 -- UPDATE sections SET section_order=1 WHERE section_name='اقتصاد';
 -- UPDATE sections SET section_order=2 WHERE section_name='تكنولوجيا';
 -- UPDATE sections SET section_order=3 WHERE section_name='سياسة';
@@ -200,6 +197,24 @@ CREATE TABLE IF NOT EXISTS privacy_policy (
 INSERT INTO privacy_policy (
     text
 ) VALUES ('');
+
+CREATE TABLE polls (
+    poll_id uuid PRIMARY KEY,
+    title TEXT NOT NULL,
+    is_active BOOLEAN DEFAULT FALSE,
+    created_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
+    updated_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE poll_options (
+    option_id uuid PRIMARY KEY,
+    name TEXT NOT NULL,
+    votes INT NOT NULL,
+    poll_id uuid REFERENCES polls(poll_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
 
 -- SELECT con.*
 --        FROM pg_catalog.pg_constraint con
