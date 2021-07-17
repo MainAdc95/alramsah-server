@@ -20,6 +20,7 @@ const newsQuery = (
                 n.title,
                 n.text,
                 n.sub_titles,
+                n.resources,
                 n.is_archived,
                 n.updated_at,
                 n.created_at,
@@ -189,6 +190,7 @@ export async function addNews(req: Request, res: Response, next: NextFunction) {
             images,
             tags,
             subTitles,
+            resources,
             thumbnail,
             is_published,
         } = req.body;
@@ -210,6 +212,7 @@ export async function addNews(req: Request, res: Response, next: NextFunction) {
                 title,
                 text,
                 sub_titles,
+                resources,
                 created_by,
                 updated_by,
                 created_at,
@@ -234,6 +237,14 @@ export async function addNews(req: Request, res: Response, next: NextFunction) {
                         ? subTitles?.map((s: any) => ({
                               sub_title_id: uuid(),
                               sub_title: s.sub_title,
+                          }))
+                        : []
+                ),
+                JSON.stringify(
+                    resources?.length
+                        ? resources?.map((r: any) => ({
+                              resource_id: uuid(),
+                              resource: r.resource,
                           }))
                         : []
                 ),
@@ -296,6 +307,7 @@ export async function editNews(
             images,
             tags,
             subTitles,
+            resources,
             thumbnail,
         } = req.body;
 
@@ -315,11 +327,12 @@ export async function editNews(
                     text=$3,
                     sub_titles=$4,
                     updated_by=$5,
-                    updated_at=$6
+                    updated_at=$6,
+                    resources=$7
                     ${section ? `, section='${section}'` : ""}
                     ${thumbnail ? `, thumbnail='${thumbnail.image_id}'` : ""}
                     ${file ? `, file='${file}'` : ""}
-                WHERE news_id=$7
+                WHERE news_id=$8
                 `,
             [
                 intro,
@@ -335,6 +348,14 @@ export async function editNews(
                 ),
                 authId,
                 date,
+                JSON.stringify(
+                    resources?.length
+                        ? resources?.map((r: any) => ({
+                              resource_id: uuid(),
+                              resource: r.resource,
+                          }))
+                        : []
+                ),
                 newsId,
             ]
         );

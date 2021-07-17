@@ -130,6 +130,7 @@ CREATE TABLE IF NOT EXISTS news (
     title TEXT,
     text TEXT,
     sub_titles JSONB,
+    resources JSONB,
     section uuid REFERENCES sections(section_id) ON DELETE NO ACTION ON UPDATE CASCADE,
     readers INT,
     file uuid REFERENCES files(file_id) ON DELETE NO ACTION ON UPDATE CASCADE,
@@ -140,6 +141,8 @@ CREATE TABLE IF NOT EXISTS news (
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE news ADD resources JSONB;
 
 ALTER TABLE news ALTER column intro TEXT drop not null;
 ALTER TABLE news ALTER column title TEXT drop not null;
