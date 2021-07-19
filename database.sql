@@ -111,6 +111,8 @@ CREATE TABLE IF NOT EXISTS articles (
     created_at TIMESTAMPTZ DEFAULT NOW() 
 );
 
+-- ALTER TABLE news ADD readers INT;
+
 CREATE TABLE IF NOT EXISTS article_image (
     article_id uuid NOT NULL REFERENCES articles(article_id) ON DELETE CASCADE ON UPDATE CASCADE,
     image_id uuid NOT NULL REFERENCES images(image_id) ON UPDATE CASCADE,
@@ -144,9 +146,9 @@ CREATE TABLE IF NOT EXISTS news (
 
 ALTER TABLE news ADD resources JSONB;
 
-ALTER TABLE news ALTER column intro TEXT drop not null;
-ALTER TABLE news ALTER column title TEXT drop not null;
-ALTER TABLE news ALTER column text TEXT drop not null;
+-- ALTER TABLE news ALTER column intro TEXT drop not null;
+-- ALTER TABLE news ALTER column title TEXT drop not null;
+-- ALTER TABLE news ALTER column text TEXT drop not null;
 
 CREATE TABLE IF NOT EXISTS news_image (
     news_id uuid NOT NULL REFERENCES news(news_id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -216,6 +218,12 @@ CREATE TABLE poll_options (
     name TEXT NOT NULL,
     votes INT,
     poll_id uuid REFERENCES polls(poll_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS news_letter (
+    news_letter_id uuid PRIMARY KEY,
+    email TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

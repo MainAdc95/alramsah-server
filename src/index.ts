@@ -20,6 +20,7 @@ import articleRoutes from "./routes/article";
 import stripRoutes from "./routes/strip";
 import fileRoutes from "./routes/file";
 import pollRoutes from "./routes/poll";
+import newsLetterRoutes from "./routes/newsLetter";
 
 // server setup
 const app = express();
@@ -58,6 +59,7 @@ app.use("/api", articleRoutes);
 app.use("/api", stripRoutes);
 app.use("/api", fileRoutes);
 app.use("/api", pollRoutes);
+app.use("/api", newsLetterRoutes);
 
 app.get("/api/rss/:url(*)", async (req, res, next) => {
     try {

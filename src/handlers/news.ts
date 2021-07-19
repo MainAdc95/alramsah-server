@@ -169,6 +169,26 @@ export async function getAllNews(
             )
         );
 
+        console.log(
+            newsQuery(
+                p
+                    ? `WHERE
+                ${sectionId ? `n.section='${sectionId}' AND` : ""}
+                ${
+                    tag
+                        ? `n.news_id IN (select news_id from news_tag WHERE tag_id='${tag}') AND`
+                        : ""
+                }
+                is_published=${type === "published" ? true : false} AND
+                is_archived=${type === "archived" ? true : false}
+                `
+                    : "",
+                "",
+                r ? `LIMIT ${r}` : "",
+                `OFFSET ${sum(p, r)}`
+            )
+        );
+
         return res.status(200).json({
             results: count,
             news,
@@ -222,7 +242,7 @@ export async function addNews(req: Request, res: Response, next: NextFunction) {
                 ${file ? `, file` : ""}
             ) VALUES (${
                 thumbnail ? `'${thumbnail.image_id}',` : ""
-            } $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+            } $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
             ${section ? `, '${section}'` : ""}
             ${file ? `, '${file}'` : ""}
             )
@@ -657,8 +677,18 @@ export async function homeInfo(
             `
         );
 
-        return res.status(200).json({ sections, strips, files });
+        const { rows: tmrNews } = await pool.query(
+            newsQuery(
+                "WHERE n.created_at > now()::date - 7",
+                "ORDER BY n.readers desc, n.created_by DESC",
+                "LIMIT 10",
+                ""
+            )
+        );
+
+        return res.status(200).json({ sections, strips, files, tmrNews });
     } catch (err) {
+        console.log(err.message);
         return next(err);
     }
 }

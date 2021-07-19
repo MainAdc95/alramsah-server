@@ -54,10 +54,6 @@ const Config = {
             password: process.env.INFO_PASS,
         },
     },
-    // stripe: {
-    //     sk: process.env.STRIPE_SECRET_KEY,
-    //     pk: process.env.STRIPE_PUBLIC_KEY,
-    // },
 };
-console.log(Config);
+
 export default Config;
