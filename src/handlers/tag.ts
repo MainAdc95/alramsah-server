@@ -4,7 +4,12 @@ import { v4 as uuid } from "uuid";
 import { QueryResult } from "pg";
 import { ITag } from "../models/tag";
 
-const query = (filter?: string, order?: string, limit?: string) => `
+const query = (
+    filter?: string,
+    order?: string,
+    limit?: string,
+    offset?: string
+) => `
             SELECT
                 t.tag_id,
                 t.tag_name,
@@ -26,6 +31,7 @@ const query = (filter?: string, order?: string, limit?: string) => `
             GROUP BY t.tag_id, cb.user_id, ub.user_id
             ${order || "ORDER BY t.created_at desc"}
             ${limit || "LIMIT 100"}
+            ${offset || ""}
         `;
 
 export async function getTag(req: Request, res: Response, next: NextFunction) {
@@ -44,9 +50,22 @@ export async function getTag(req: Request, res: Response, next: NextFunction) {
     }
 }
 
+const sum = (times: number, value: number) => {
+    let totalValue = 0;
+
+    for (let i = 0; i < times; i++) {
+        totalValue += value;
+    }
+
+    return totalValue - value;
+};
+
 export async function getTags(req: Request, res: Response, next: NextFunction) {
     try {
-        const { p, r } = req.query;
+        let { p, r }: any = req.query;
+
+        p = Number(p);
+        r = r ? Number(r) : 20;
 
         if (p || r) {
             const {
@@ -54,16 +73,7 @@ export async function getTags(req: Request, res: Response, next: NextFunction) {
             } = await pool.query(`SELECT count(*) FROM tags`);
 
             const { rows: tags }: QueryResult<ITag> = await pool.query(
-                query(
-                    p
-                        ? `WHERE tag_order < ${
-                              Number(Number(p) === 1 ? count + 1 : count) /
-                              Number(p)
-                          }`
-                        : "",
-                    "",
-                    `LIMIT ${r}`
-                )
+                query("", "", r ? `LIMIT ${r}` : "", `OFFSET ${sum(p, r)}`)
             );
 
             return res.status(200).json({

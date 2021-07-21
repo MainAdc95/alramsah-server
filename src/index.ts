@@ -22,6 +22,88 @@ import fileRoutes from "./routes/file";
 import pollRoutes from "./routes/poll";
 import newsLetterRoutes from "./routes/newsLetter";
 
+// seed
+import bcrypt from "bcrypt";
+import { pool } from "./utils/db";
+import { v4 as uuid } from "uuid";
+const fs = require("fs");
+
+const createUsers = async () => {
+    const file = fs.readFileSync("wpxc_users.json");
+    let data = JSON.parse(file);
+
+    for (let user of data[0].data as any) {
+        const {
+            user_email: email,
+            user_pass: password,
+            user_nicename: username,
+            user_registered: created_at,
+        } = user;
+
+        // hashing the password to be stored in the data base.
+        const hashPassword = await bcrypt.hash(password, 10);
+
+        let userId = uuid();
+
+        // creating a user in the data base
+        await pool.query(
+            `INSERT INTO users (
+                user_id,
+                avatar,
+                username,
+                first_name,
+                last_name,
+                email,
+                phone,
+                password,
+                version,
+                created_at
+            ) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
+            `,
+            [
+                userId,
+                "2d06f735-f13c-4142-803b-6834648fed2d",
+                username,
+                "",
+                "",
+                email,
+                "",
+                hashPassword,
+                1,
+                created_at,
+            ]
+        );
+    }
+};
+
+const createTags = async () => {
+    const file = fs.readFileSync("wpxc_terms.json");
+    let data = JSON.parse(file);
+
+    for (let tag of data[0].data as any) {
+        const { name: tag_name } = tag;
+
+        let tagId = uuid();
+        let date = new Date();
+
+        await pool.query(
+            `
+            INSERT INTO tags (
+                tag_id,
+                tag_name,
+                created_at,
+                updated_at
+            ) VALUES ($1, $2, $3, $4)
+            `,
+            [tagId, tag_name, date, date]
+        );
+    }
+};
+
+createTags();
+createUsers();
+
 // server setup
 const app = express();
 const port = process.env.PORT || 5000;
