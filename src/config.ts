@@ -16,7 +16,7 @@ const Config = {
             : `http://localhost:${port}/api`,
     jwtSecret: process.env.JWT_SECRET || "alskdjf10293nlkajndhflsdfgkj12",
     aws: {
-        bucketName: process.env.BUCKET_NAME || "alramsah",
+        bucketName: process.env.BUCKET_NAME || "alramsah1",
         iamKey: process.env.IAM_KEY,
         iamSecret: process.env.IAM_SECRET,
     },

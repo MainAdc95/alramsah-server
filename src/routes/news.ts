@@ -8,6 +8,7 @@ import {
     publishNews,
     archiveNews,
     homeInfo,
+    read,
 } from "../handlers/news";
 import { isLoggedIn } from "../middlewares/auth";
 import { isAdmin } from "../middlewares/roles";
@@ -21,6 +22,8 @@ router.get("/news", getAllNews);
 router.get("/homeInfo", homeInfo);
 
 router.post("/news", isLoggedIn, isAdmin, addNews);
+
+router.post("/news/:newsId/read", read);
 
 router.put("/news/publish_news/:newsId", isLoggedIn, isAdmin, publishNews);
 

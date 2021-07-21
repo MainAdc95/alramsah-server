@@ -3,7 +3,7 @@ CREATE DATABASE alramsah;
 
 CREATE TABLE IF NOT EXISTS user_images (
     image_id uuid PRIMARY KEY NOT NULL,
-    image_name VARCHAR(255) NOT NULL UNIQUE,
+    sizes JSONB,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

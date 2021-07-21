@@ -18,6 +18,7 @@ const articleQuery = (
                 a.intro,
                 a.title,
                 a.text,
+                a.readers,
                 a.sub_titles,
                 a.is_archived,
                 a.updated_at,
@@ -25,7 +26,8 @@ const articleQuery = (
                 a.is_published,
                 jsonb_build_object (
                     'user_id', cb.user_id,
-                    'username', cb.username
+                    'username', cb.username,
+                    'avatar', cb.avatar
                 ) as created_by,
                 jsonb_build_object (
                     'user_id', ub.user_id,
@@ -43,10 +45,21 @@ const articleQuery = (
                     'sizes', tn.sizes
                 ) END as thumbnail
             FROM articles a
-                LEFT JOIN users cb ON cb.user_id=a.created_by
                 LEFT JOIN users ub ON ub.user_id=a.updated_by
                 LEFT JOIN sections s ON s.section_id=a.section
                 LEFT JOIN images tn ON tn.image_id=a.thumbnail
+                LEFT JOIN (
+                    SELECT
+                        u.user_id,
+                        u.username,
+                        jsonb_build_object (
+                            'image_id', ui.image_id,
+                            'sizes', ui.sizes
+                        ) as avatar
+                    FROM users u
+                        LEFT JOIN user_images ui ON ui.image_id=u.avatar
+                ) as cb
+                    ON cb.user_id=a.created_by
                 LEFT JOIN (
                     SELECT
                         nt.article_id,
@@ -70,7 +83,7 @@ const articleQuery = (
                 ) as i
                     ON i.article_id=a.article_id
             ${filter || ""}
-            GROUP BY a.article_id, cb.user_id, ub.user_id, s.section_id, tn.image_id
+            GROUP BY a.article_id, cb.user_id, cb.username, cb.avatar, ub.user_id, s.section_id, tn.image_id
             ${order || "ORDER BY a.created_at desc"}
             ${limit || "LIMIT 100"}
             ${offset || ""}
@@ -121,7 +134,7 @@ export async function getArticles(
         let {
             rows: [{ count }],
         } = await pool.query(
-            `SELECT count(*) FROM articles n WHERE 
+            `SELECT count(*) FROM articles a WHERE 
             ${
                 tag
                     ? `a.article_id IN (select article_id from article_tag WHERE tag_id='${tag}') AND`

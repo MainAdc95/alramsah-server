@@ -298,7 +298,7 @@ export async function vote(req: Request, res: Response, next: NextFunction) {
         const { optionId } = req.params;
 
         await pool.query(
-            `UPDATE poll_options SET votes = votes + 1 WHERE option_id=$1`,
+            `UPDATE poll_options SET votes = votes + 8 WHERE option_id=$1`,
             [optionId]
         );
 

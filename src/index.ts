@@ -61,11 +61,11 @@ app.use("/api", fileRoutes);
 app.use("/api", pollRoutes);
 app.use("/api", newsLetterRoutes);
 
+let parser = new rssParser();
+
 app.get("/api/rss/:url(*)", async (req, res, next) => {
     try {
         const { url } = req.params;
-
-        let parser = new rssParser();
 
         let feed = await parser.parseURL(url);
 

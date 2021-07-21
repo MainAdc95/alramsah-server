@@ -19,6 +19,7 @@ const newsQuery = (
                 n.intro,
                 n.title,
                 n.text,
+                n.readers,
                 n.sub_titles,
                 n.resources,
                 n.is_archived,
@@ -128,7 +129,8 @@ export async function getAllNews(
     next: NextFunction
 ) {
     try {
-        let { p, r, type, sectionId, tag }: any = req.query;
+        let { p, r, type, sectionId, tag, mvn, newsId, fileId, text }: any =
+            req.query;
 
         p = Number(p);
         r = r ? Number(r) : 20;
@@ -144,7 +146,10 @@ export async function getAllNews(
             }
             is_published=${type === "published" ? true : false} AND
             is_archived=${type === "archived" ? true : false}
-            ${sectionId ? `AND section='${sectionId}'` : ""}`
+            ${sectionId ? `AND section='${sectionId}'` : ""}
+            ${fileId ? `AND file='${fileId}'` : ""}
+            ${text ? `AND title @@ to_tsquery('${text}')` : ""}
+            `
         );
 
         count = Number(count);
@@ -153,37 +158,20 @@ export async function getAllNews(
             newsQuery(
                 p
                     ? `WHERE
+                    ${fileId ? `n.file='${fileId}' AND` : ""}
+                    ${text ? `n.title @@ to_tsquery('${text}') AND` : ""}
                     ${sectionId ? `n.section='${sectionId}' AND` : ""}
                     ${
                         tag
                             ? `n.news_id IN (select news_id from news_tag WHERE tag_id='${tag}') AND`
                             : ""
                     }
+                    ${newsId ? `n.news_id != '${newsId}' AND` : ""}
                     is_published=${type === "published" ? true : false} AND
                     is_archived=${type === "archived" ? true : false}
                     `
                     : "",
-                "",
-                r ? `LIMIT ${r}` : "",
-                `OFFSET ${sum(p, r)}`
-            )
-        );
-
-        console.log(
-            newsQuery(
-                p
-                    ? `WHERE
-                ${sectionId ? `n.section='${sectionId}' AND` : ""}
-                ${
-                    tag
-                        ? `n.news_id IN (select news_id from news_tag WHERE tag_id='${tag}') AND`
-                        : ""
-                }
-                is_published=${type === "published" ? true : false} AND
-                is_archived=${type === "archived" ? true : false}
-                `
-                    : "",
-                "",
+                mvn ? `ORDER BY n.readers desc` : "",
                 r ? `LIMIT ${r}` : "",
                 `OFFSET ${sum(p, r)}`
             )
@@ -590,6 +578,26 @@ export async function publishNews(
     }
 }
 
+export async function read(req: Request, res: Response, next: NextFunction) {
+    try {
+        const { newsId } = req.params;
+
+        await pool.query(
+            `
+            UPDATE news
+            SET
+                readers=readers + 8
+            WHERE news_id=$1
+            `,
+            [newsId]
+        );
+
+        return res.status(200).json("");
+    } catch (err) {
+        return next(err);
+    }
+}
+
 export async function homeInfo(
     req: Request,
     res: Response,
@@ -686,9 +694,59 @@ export async function homeInfo(
             )
         );
 
-        return res.status(200).json({ sections, strips, files, tmrNews });
+        const {
+            rows: [article],
+        } = await pool.query(
+            `
+            SELECT
+                a.article_id,
+                a.title,
+                a.readers,
+                a.created_at,
+                jsonb_build_object (
+                    'user_id', cb.user_id,
+                    'username', cb.username,
+                    'avatar', cb.avatar
+                ) as created_by,
+                CASE WHEN COUNT(tn)=0 THEN null ELSE jsonb_build_object (
+                    'image_id', tn.image_id,
+                    'sizes', tn.sizes
+                ) END as thumbnail
+            FROM articles a
+                LEFT JOIN images tn ON tn.image_id=a.thumbnail
+                LEFT JOIN (
+                    SELECT
+                        u.user_id,
+                        u.username,
+                        jsonb_build_object (
+                            'image_id', ui.image_id,
+                            'sizes', ui.sizes
+                        ) as avatar
+                    FROM users u
+                        LEFT JOIN user_images ui ON ui.image_id=u.avatar
+                ) as cb
+                    ON cb.user_id=a.created_by
+                LEFT JOIN (
+                    SELECT
+                        ni.article_id,
+                        jsonb_build_object (
+                            'image_id', i.image_id,
+                            'sizes', i.sizes
+                        ) as image
+                    FROM article_image ni
+                        LEFT JOIN images i ON i.image_id=ni.image_id
+                ) as i
+                    ON i.article_id=a.article_id
+                GROUP BY a.article_id, cb.user_id, cb.username, cb.avatar, tn.image_id
+                ORDER BY a.created_at desc
+                LIMIT 1
+            `
+        );
+
+        return res
+            .status(200)
+            .json({ sections, strips, files, tmrNews, article });
     } catch (err) {
-        console.log(err.message);
         return next(err);
     }
 }
