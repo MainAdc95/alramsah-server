@@ -41,7 +41,7 @@ const createUsers = async () => {
         } = user;
 
         // hashing the password to be stored in the data base.
-        const hashPassword = await bcrypt.hash(password, 10);
+        const hashPassword = await bcrypt.hash("alramsah123456", 10);
 
         let userId = uuid();
 
@@ -101,8 +101,8 @@ const createTags = async () => {
     }
 };
 
-createTags();
-createUsers();
+// createTags();
+// createUsers();
 
 // server setup
 const app = express();

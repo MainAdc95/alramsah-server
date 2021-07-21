@@ -30,7 +30,7 @@ const query = (
             ${filter || ""}
             GROUP BY t.tag_id, cb.user_id, ub.user_id
             ${order || "ORDER BY t.created_at desc"}
-            ${limit || "LIMIT 100"}
+            ${limit || ""}
             ${offset || ""}
         `;
 
@@ -67,7 +67,7 @@ export async function getTags(req: Request, res: Response, next: NextFunction) {
         p = Number(p);
         r = r ? Number(r) : 20;
 
-        if (p || r) {
+        if (p && r) {
             const {
                 rows: [{ count }],
             } = await pool.query(`SELECT count(*) FROM tags`);
@@ -75,7 +75,7 @@ export async function getTags(req: Request, res: Response, next: NextFunction) {
             const { rows: tags }: QueryResult<ITag> = await pool.query(
                 query("", "", r ? `LIMIT ${r}` : "", `OFFSET ${sum(p, r)}`)
             );
-
+            console.log(tags);
             return res.status(200).json({
                 results: count,
                 tags,
