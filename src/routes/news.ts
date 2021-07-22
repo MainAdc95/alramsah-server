@@ -11,7 +11,7 @@ import {
     read,
 } from "../handlers/news";
 import { isLoggedIn } from "../middlewares/auth";
-import { isAdmin } from "../middlewares/roles";
+import { isAdmin, isEditor } from "../middlewares/roles";
 
 const router = express.Router();
 
@@ -21,13 +21,13 @@ router.get("/news", getAllNews);
 
 router.get("/homeInfo", homeInfo);
 
-router.post("/news", isLoggedIn, isAdmin, addNews);
+router.post("/news", isLoggedIn, isEditor, addNews);
 
 router.post("/news/:newsId/read", read);
 
 router.put("/news/publish_news/:newsId", isLoggedIn, isAdmin, publishNews);
 
-router.put("/news/:newsId", isLoggedIn, isAdmin, editNews);
+router.put("/news/:newsId", isLoggedIn, isEditor, editNews);
 
 router.delete("/news/:newsId", isLoggedIn, isAdmin, permanentlyDeleteNews);
 
