@@ -21,7 +21,7 @@ export async function addUserImages(
                 img.mimetype === "image/png" || img.mimetype === "image/svg"
                     ? "png"
                     : "jpeg";
-            const file = await sharp(img.buffer)[format]({ quality: 85 });
+            const file = await sharp(img.buffer)[format]({ quality: 80 });
 
             const imgParams = {
                 Bucket: Config.aws.bucketName,

@@ -45,7 +45,7 @@ export async function addImages(
 
                     if (size === "l") {
                         file = await sharp(buffer)[format]({
-                            quality: 85,
+                            quality: 80,
                             mozjpeg: format === "jpeg",
                         });
                     } else {
@@ -61,7 +61,7 @@ export async function addImages(
                                         : Math.ceil(width / 2 / 2),
                             })
                             [format]({
-                                quality: 85,
+                                quality: 80,
                                 mozjpeg: format === "jpeg",
                             });
                     }
