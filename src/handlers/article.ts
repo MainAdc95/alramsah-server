@@ -35,18 +35,12 @@ const articleQuery = (
                 ) as updated_by,
                 CASE WHEN COUNT(t)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(DISTINCT t.tag) END as tags,
                 CASE WHEN COUNT(i)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(DISTINCT i.image) END as images,
-                CASE WHEN COUNT(s)=0 THEN null ELSE jsonb_build_object (
-                    'section_id', s.section_id,
-                    'section_name', s.section_name,
-                    'color', s.color
-                ) END as section,
                 CASE WHEN COUNT(tn)=0 THEN null ELSE jsonb_build_object (
                     'image_id', tn.image_id,
                     'sizes', tn.sizes
                 ) END as thumbnail
             FROM articles a
                 LEFT JOIN users ub ON ub.user_id=a.updated_by
-                LEFT JOIN sections s ON s.section_id=a.section
                 LEFT JOIN images tn ON tn.image_id=a.thumbnail
                 LEFT JOIN (
                     SELECT
@@ -83,7 +77,7 @@ const articleQuery = (
                 ) as i
                     ON i.article_id=a.article_id
             ${filter || ""}
-            GROUP BY a.article_id, cb.user_id, cb.username, cb.avatar, ub.user_id, s.section_id, tn.image_id
+            GROUP BY a.article_id, cb.user_id, cb.username, cb.avatar, ub.user_id, tn.image_id
             ${order || "ORDER BY a.created_at desc"}
             ${limit || "LIMIT 100"}
             ${offset || ""}
@@ -126,7 +120,7 @@ export async function getArticles(
     next: NextFunction
 ) {
     try {
-        let { p, r, type, sectionId, tag }: any = req.query;
+        let { p, r, type, tag }: any = req.query;
 
         p = Number(p);
         r = r ? Number(r) : 20;
@@ -141,8 +135,7 @@ export async function getArticles(
                     : ""
             }
             is_published=${type === "published" ? true : false} AND
-            is_archived=${type === "archived" ? true : false}
-            ${sectionId ? `AND section='${sectionId}'` : ""}`
+            is_archived=${type === "archived" ? true : false}`
         );
 
         count = Number(count);
@@ -151,7 +144,6 @@ export async function getArticles(
             articleQuery(
                 p
                     ? `WHERE
-                    ${sectionId ? `a.section='${sectionId}' AND` : ""}
                     ${
                         tag
                             ? `a.article_id IN (select article_id from article_tag WHERE tag_id='${tag}') AND`
@@ -187,7 +179,6 @@ export async function addArticle(
             intro,
             title,
             text,
-            section,
             images,
             tags,
             subTitles,
@@ -217,11 +208,9 @@ export async function addArticle(
                 created_at,
                 updated_at,
                 is_published
-                ${section ? `, section` : ""}
             ) VALUES (${
                 thumbnail ? `'${thumbnail.image_id}',` : ""
             } $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
-            ${section ? `, '${section}'` : ""}
             )
         `,
             [
@@ -287,16 +276,8 @@ export async function editArticle(
     try {
         const { authId } = req.query;
         const { articleId } = req.params;
-        let {
-            intro,
-            title,
-            text,
-            section,
-            images,
-            tags,
-            subTitles,
-            thumbnail,
-        } = req.body;
+        let { intro, title, text, images, tags, subTitles, thumbnail } =
+            req.body;
 
         title = String(title).trim();
         intro = String(intro).trim();
@@ -316,7 +297,6 @@ export async function editArticle(
                     sub_titles=$4,
                     updated_by=$5,
                     updated_at=$6
-                    ${section ? `, section='${section}'` : ""}
                     ${thumbnail ? `, thumbnail='${thumbnail.image_id}'` : ""}
                 WHERE article_id=$7
                 `,
@@ -352,7 +332,6 @@ export async function editArticle(
             FROM articles a
                 LEFT JOIN users cb ON cb.user_id=a.created_by
                 LEFT JOIN users ub ON ub.user_id=a.updated_by
-                LEFT JOIN sections s ON s.section_id=a.section
                 LEFT JOIN (
                     SELECT
                         nt.article_id,
@@ -376,7 +355,7 @@ export async function editArticle(
                 ) as i
                     ON i.article_id=a.article_id
             WHERE a.article_id=$1
-            GROUP BY a.article_id, cb.user_id, ub.user_id, s.section_id
+            GROUP BY a.article_id, cb.user_id, ub.user_id
             `,
                     [articleId]
                 );

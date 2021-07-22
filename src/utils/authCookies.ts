@@ -8,6 +8,8 @@ interface IJwt {
     is_super_admin: boolean;
     user_id: string;
     is_editor: boolean;
+    is_admin_assistant: boolean;
+    is_writer: boolean;
     is_reporter: boolean;
 }
 

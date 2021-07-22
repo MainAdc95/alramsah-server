@@ -38,6 +38,8 @@ export const isLoggedIn = function (
                         is_blocked,
                         is_admin,
                         is_super_admin,
+                        is_admin_assistant,
+                        is_writer,
                         is_editor,
                         is_reporter
                     FROM users 
@@ -64,6 +66,8 @@ export const isLoggedIn = function (
                     version,
                     is_admin,
                     is_super_admin,
+                    is_admin_assistant,
+                    is_writer,
                     is_editor,
                     is_reporter,
                 } = user;
@@ -73,6 +77,8 @@ export const isLoggedIn = function (
                         version,
                         is_admin,
                         is_super_admin,
+                        is_admin_assistant,
+                        is_writer,
                         user_id,
                         is_editor,
                         is_reporter,

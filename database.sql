@@ -31,12 +31,17 @@ CREATE TABLE IF NOT EXISTS users (
     is_admin BOOLEAN NOT NULL DEFAULT FALSE,
     is_editor BOOLEAN NOT NULL DEFAULT FALSE,
     is_reporter BOOLEAN NOT NULL DEFAULT FALSE,
+    is_admin_assistant BOOLEAN DEFAULT FALSE,
+    is_writer BOOLEAN DEFAULT FALSE,
     is_active BOOLEAN NOT NULL DEFAULT FALSE,
     is_blocked BOOLEAN NOT NULL DEFAULT FALSE,
     updated_by uuid REFERENCES users(user_id),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- ALTER TABLE users ADD is_admin_assistant BOOLEAN DEFAULT FALSE;
+-- ALTER TABLE users ADD is_writer BOOLEAN DEFAULT FALSE;
 
 ALTER TABLE IF EXISTS user_images
     ADD COLUMN user_id uuid
@@ -110,6 +115,8 @@ CREATE TABLE IF NOT EXISTS articles (
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     created_at TIMESTAMPTZ DEFAULT NOW() 
 );
+
+alter table articles drop column section;
 
 -- alter table articles drop column readers;
 -- ALTER TABLE articles ADD readers INT DEFAULT 0;

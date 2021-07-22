@@ -24,6 +24,8 @@ const userQuery = (filter?: string) => `
         u.phone,
         u.password,
         u.version,
+        u.is_admin_assistant,
+        u.is_writer,
         u.is_admin,
         u.is_active,
         u.is_blocked,
@@ -286,6 +288,8 @@ export async function signin(req: Request, res: Response, next: NextFunction) {
             is_admin,
             is_super_admin,
             is_editor,
+            is_admin_assistant,
+            is_writer,
             is_reporter,
         } = user;
 
@@ -296,6 +300,9 @@ export async function signin(req: Request, res: Response, next: NextFunction) {
             is_super_admin,
             user_id,
             is_editor,
+            is_admin_assistant,
+            is_writer,
+
             is_reporter,
         });
 
@@ -310,6 +317,8 @@ export async function signin(req: Request, res: Response, next: NextFunction) {
             version: version,
             is_admin: is_admin,
             is_super_admin: is_super_admin,
+            is_admin_assistant,
+            is_writer,
             is_editor,
             is_reporter,
         });
@@ -370,6 +379,8 @@ export async function signinOnload(
                     is_super_admin,
                     is_editor,
                     is_reporter,
+                    is_admin_assistant,
+                    is_writer,
                 } = user;
 
                 if (decoded.user_id !== req.params.id) {
@@ -382,6 +393,8 @@ export async function signinOnload(
                             is_admin,
                             is_super_admin,
                             user_id,
+                            is_admin_assistant,
+                            is_writer,
                             is_editor,
                             is_reporter,
                         });
@@ -397,6 +410,8 @@ export async function signinOnload(
                     phone: phone,
                     version: version,
                     avatar,
+                    is_admin_assistant,
+                    is_writer,
                     is_admin: is_admin,
                     is_super_admin: is_super_admin,
                     is_editor,

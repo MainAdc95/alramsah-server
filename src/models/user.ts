@@ -10,6 +10,8 @@ export interface IUser {
     is_admin: boolean;
     is_super_admin: boolean;
     is_editor: boolean;
+    is_admin_assistant: boolean;
+    is_writer: boolean;
     is_reporter: boolean;
     is_blocked: boolean;
     is_active: boolean;

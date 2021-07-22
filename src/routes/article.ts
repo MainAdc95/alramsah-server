@@ -9,7 +9,7 @@ import {
     archiveArticle,
 } from "../handlers/article";
 import { isLoggedIn } from "../middlewares/auth";
-import { isAdmin } from "../middlewares/roles";
+import { isAdmin, checkRole } from "../middlewares/roles";
 
 const router = express.Router();
 
@@ -17,12 +17,29 @@ router.get("/articles/:articleId", getArticle);
 
 router.get("/articles", getArticles);
 
-router.post("/articles", isLoggedIn, isAdmin, addArticle);
+router.post(
+    "/articles",
+    isLoggedIn,
+    (req, res, next) =>
+        checkRole(req, next, [
+            "is_super_admin",
+            "is_admin",
+            "is_admin_assistant",
+            "is_writer",
+            "is_editor",
+        ]),
+    addArticle
+);
 
 router.put(
     "/articles/publish_article/:articleId",
     isLoggedIn,
-    isAdmin,
+    (req, res, next) =>
+        checkRole(req, next, [
+            "is_super_admin",
+            "is_admin",
+            "is_admin_assistant",
+        ]),
     publishArticle
 );
 

@@ -11,7 +11,7 @@ import {
     read,
 } from "../handlers/news";
 import { isLoggedIn } from "../middlewares/auth";
-import { isAdmin, isEditor } from "../middlewares/roles";
+import { isAdmin, isEditor, checkRole } from "../middlewares/roles";
 
 const router = express.Router();
 
@@ -21,11 +21,32 @@ router.get("/news", getAllNews);
 
 router.get("/homeInfo", homeInfo);
 
-router.post("/news", isLoggedIn, isEditor, addNews);
+router.post(
+    "/news",
+    isLoggedIn,
+    (req, res, next) =>
+        checkRole(req, next, [
+            "is_super_admin",
+            "is_admin",
+            "is_admin_assistant",
+            "is_editor",
+        ]),
+    addNews
+);
 
 router.post("/news/:newsId/read", read);
 
-router.put("/news/publish_news/:newsId", isLoggedIn, isAdmin, publishNews);
+router.put(
+    "/news/publish_news/:newsId",
+    isLoggedIn,
+    (req, res, next) =>
+        checkRole(req, next, [
+            "is_super_admin",
+            "is_admin",
+            "is_admin_assistant",
+        ]),
+    publishNews
+);
 
 router.put("/news/:newsId", isLoggedIn, isEditor, editNews);
 

@@ -22,6 +22,8 @@ const userQuery = (filter?: string, order?: string, limit?: string) => `
                 u.is_editor,
                 u.is_reporter,
                 u.is_admin,
+                u.is_admin_assistant,
+                u.is_writer,
                 u.is_super_admin,
                 u.is_active,
                 u.is_blocked,
@@ -216,7 +218,14 @@ export async function editRole(
     try {
         const { authId } = req.query;
         const { userId } = req.params;
-        const { is_reporter, is_editor, is_blocked, is_active } = req.body;
+        const {
+            is_writer,
+            is_admin_assistant,
+            is_reporter,
+            is_editor,
+            is_blocked,
+            is_active,
+        } = req.body;
 
         const date = new Date();
 
@@ -227,15 +236,19 @@ export async function editRole(
                 version=version + 1,
                 is_editor=$1,
                 is_reporter=$2,
-                is_blocked=$3,
-                is_active=$4,
-                updated_at=$5,
-                updated_by=$6
-            WHERE user_id=$7
+                is_writer=$3,
+                is_admin_assistant=$4,
+                is_blocked=$5,
+                is_active=$6,
+                updated_at=$7,
+                updated_by=$8
+            WHERE user_id=$9
             `,
             [
                 is_editor,
                 is_reporter,
+                is_writer,
+                is_admin_assistant,
                 is_blocked,
                 is_active,
                 date,
