@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS images (
     image_id uuid PRIMARY KEY,
     sizes JSONB,
     image_description TEXT,
-    created_by uuid NOT NULL REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
+    created_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -104,14 +104,15 @@ CREATE TABLE IF NOT EXISTS articles (
     sub_titles JSONB NULL,
     section uuid REFERENCES sections(section_id) ON DELETE NO ACTION ON UPDATE CASCADE,
     is_published BOOLEAN DEFAULT FALSE,
-    readers INT,
+    readers INT DEFAULT 0,
     created_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
     updated_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     created_at TIMESTAMPTZ DEFAULT NOW() 
 );
 
--- ALTER TABLE news ADD readers INT;
+-- alter table articles drop column readers;
+-- ALTER TABLE articles ADD readers INT DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS article_image (
     article_id uuid NOT NULL REFERENCES articles(article_id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -134,7 +135,7 @@ CREATE TABLE IF NOT EXISTS news (
     sub_titles JSONB,
     resources JSONB,
     section uuid REFERENCES sections(section_id) ON DELETE NO ACTION ON UPDATE CASCADE,
-    readers INT,
+    readers INT DEFAULT 0,
     file uuid REFERENCES files(file_id) ON DELETE NO ACTION ON UPDATE CASCADE,
     is_published BOOLEAN DEFAULT FALSE,
     is_archived BOOLEAN DEFAULT FALSE,
@@ -144,7 +145,11 @@ CREATE TABLE IF NOT EXISTS news (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- alter table news drop column readers;
+-- ALTER TABLE news ADD readers INT DEFAULT 0;
+
 ALTER TABLE news ADD resources JSONB;
+
 
 -- ALTER TABLE news ALTER column intro TEXT drop not null;
 -- ALTER TABLE news ALTER column title TEXT drop not null;

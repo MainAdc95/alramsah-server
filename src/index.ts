@@ -26,6 +26,7 @@ import newsLetterRoutes from "./routes/newsLetter";
 import bcrypt from "bcrypt";
 import { pool } from "./utils/db";
 import { v4 as uuid } from "uuid";
+import format from "pg-format";
 const fs = require("fs");
 
 const createUsers = async () => {
@@ -101,6 +102,203 @@ const createTags = async () => {
     }
 };
 
+const getSection = (section: number) => {
+    switch (section) {
+        case 4:
+            return "0faa2361-e8b8-43c7-b287-5aff7a439e16";
+        case 6:
+            return "article";
+        case 11:
+            return "8314107c-975d-41de-b718-6bcb3f16fb31";
+        case 12:
+            return "832dec03-f3a4-4ebd-99ce-218430b09d62";
+        case 13:
+            return "0faa2361-e8b8-43c7-b287-5aff7a439e16";
+        case 15:
+            return "article";
+        case 17:
+            return "0faa2361-e8b8-43c7-b287-5aff7a439e16";
+        case 3837:
+            return "0faa2361-e8b8-43c7-b287-5aff7a439e16";
+        case 9495:
+            return "8314107c-975d-41de-b718-6bcb3f16fb31";
+        case 9496:
+            return "8314107c-975d-41de-b718-6bcb3f16fb31";
+        case 9820:
+            return "palestine";
+        default:
+            return null;
+    }
+};
+
+const createNews = async () => {
+    const file1 = fs.readFileSync("news_images.json");
+    let images = JSON.parse(file1);
+    const file = fs.readFileSync("news.json");
+    let news = JSON.parse(file);
+
+    let count = 0;
+
+    for (let nItem of news[0].data as any) {
+        // if (count > 5) break;
+
+        let {
+            post_content: text,
+            post_title: title,
+            post_date: date,
+            term_taxonomy_id: section,
+        } = nItem;
+
+        let foundImage = images[0].data.find(
+            (i: any) => i.post_parent === nItem.ID
+        );
+
+        if (foundImage) {
+            let { post_title: title, post_date: date, guid: url } = foundImage;
+
+            url = url.split("/uploads/")[1];
+            console.log(url);
+            const sizes = { s: url, m: url, l: url };
+
+            const imageId = uuid();
+
+            const {
+                rows: [image],
+            } = await pool.query(
+                `
+                    INSERT INTO images (
+                        image_id,
+                        sizes,
+                        image_description
+                    )
+                    VALUES ($1, $2, $3)
+                    RETURNING *
+                `,
+                [imageId, JSON.stringify(sizes), title]
+            );
+
+            foundImage = image;
+        }
+
+        const subTitles: any = [];
+
+        section = getSection(Number(section));
+        // section = getDevSection(Number(section));
+        // section = "";
+        if (section === "article") {
+            let articleId = uuid();
+
+            // ______________________________ add article
+            await pool.query(
+                `
+            INSERT INTO articles (
+                ${foundImage ? "thumbnail, " : ""}
+                article_id,
+                intro,
+                title,
+                text,
+                sub_titles,
+                created_at,
+                updated_at,
+                is_published
+            ) VALUES (${
+                foundImage ? `'${foundImage.image_id}',` : ""
+            } $1, $2, $3, $4, $5, $6, $7, $8
+            )
+        `,
+                [
+                    articleId,
+                    "",
+                    title,
+                    text,
+                    JSON.stringify(
+                        subTitles?.length
+                            ? subTitles?.map((s: any) => ({
+                                  sub_title_id: uuid(),
+                                  sub_title: s.sub_title,
+                              }))
+                            : []
+                    ),
+                    date,
+                    date,
+                    true,
+                ]
+            );
+
+            continue;
+        }
+
+        let newsId = uuid();
+
+        const resources = [{ resource: "الرمسة" }];
+
+        // ______________________________ add news
+        await pool.query(
+            `
+                INSERT INTO news (
+                    ${foundImage ? "thumbnail, " : ""}
+                    news_id,
+                    intro,
+                    title,
+                    text,
+                    sub_titles,
+                    resources,
+                    created_at,
+                    updated_at,
+                    is_published
+                    ${section ? `, section` : ""}
+                    ${section === "palestine" ? `, file` : ""}
+                ) VALUES (${
+                    foundImage ? `'${foundImage.image_id}',` : ""
+                } $1, $2, $3, $4, $5, $6, $7, $8, $9
+                ${
+                    section === "palestine"
+                        ? `, '84330a97-0639-4e9a-9fd2-cd0d860d48fc'`
+                        : ""
+                }
+                ${
+                    section
+                        ? `, '${
+                              section === "palestine"
+                                  ? "0faa2361-e8b8-43c7-b287-5aff7a439e16"
+                                  : section
+                          }'`
+                        : ""
+                }
+                )
+            `,
+            [
+                newsId,
+                "",
+                title,
+                text,
+                JSON.stringify(
+                    subTitles?.length
+                        ? subTitles?.map((s: any) => ({
+                              sub_title_id: uuid(),
+                              sub_title: s.sub_title,
+                          }))
+                        : []
+                ),
+                JSON.stringify(
+                    resources?.length
+                        ? resources?.map((r: any) => ({
+                              resource_id: uuid(),
+                              resource: r.resource,
+                          }))
+                        : []
+                ),
+                date,
+                date,
+                true,
+            ]
+        );
+
+        count++;
+    }
+};
+
+// createNews();
 // createTags();
 // createUsers();
 
