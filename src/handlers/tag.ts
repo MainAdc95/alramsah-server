@@ -75,7 +75,7 @@ export async function getTags(req: Request, res: Response, next: NextFunction) {
             const { rows: tags }: QueryResult<ITag> = await pool.query(
                 query("", "", r ? `LIMIT ${r}` : "", `OFFSET ${sum(p, r)}`)
             );
-            console.log(tags);
+
             return res.status(200).json({
                 results: count,
                 tags,
