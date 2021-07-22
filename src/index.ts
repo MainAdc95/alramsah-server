@@ -246,8 +246,8 @@ const createNews = async () => {
                     created_at,
                     updated_at,
                     is_published
-                    ${section ? `, section` : ""}
                     ${section === "palestine" ? `, file` : ""}
+                    ${section !== "palestine" ? `, section` : ""}
                 ) VALUES (${
                     foundImage ? `'${foundImage.image_id}',` : ""
                 } $1, $2, $3, $4, $5, $6, $7, $8, $9
@@ -298,6 +298,23 @@ const createNews = async () => {
     }
 };
 
+const createReaders = async () => {
+    const { rows: news } = await pool.query(`SELECT * FROM news`);
+
+    for (let item of news) {
+        const min = 25000;
+        const max = 39520;
+
+        const readers = Math.floor(Math.random() * (max - min + 1)) + min;
+
+        await pool.query(`UPDATE news SET readers=$1 WHERE news_id=$2`, [
+            readers,
+            item.news_id,
+        ]);
+    }
+};
+
+createReaders();
 // createNews();
 // createTags();
 // createUsers();

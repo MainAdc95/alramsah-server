@@ -234,8 +234,8 @@ export async function editRole(
             WHERE user_id=$7
             `,
             [
-                is_reporter,
                 is_editor,
+                is_reporter,
                 is_blocked,
                 is_active,
                 date,
