@@ -123,17 +123,18 @@ export async function sendMessage(
         );
 
         // ____________________________ images
-        await pool.query(
-            format(
-                `
+        if (images.length)
+            await pool.query(
+                format(
+                    `
             INSERT INTO message_image (
                 message_id,
                 image_id
             ) VALUES %L
             `,
-                images.map((img: IImage) => [messageId, img.image_id])
-            )
-        );
+                    images.map((img: IImage) => [messageId, img.image_id])
+                )
+            );
 
         return res
             .status(201)
