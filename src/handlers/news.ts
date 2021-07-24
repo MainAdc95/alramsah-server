@@ -9,11 +9,73 @@ import { ITag } from "../models/tag";
 import { ISection } from "../models/section";
 
 const newsQuery = (
+    isAdmin: boolean,
     filter: string,
     order: string,
     limit: string,
     offset: string
 ) => `
+            SELECT
+                n.news_id,
+                n.title,
+                n.readers,
+                ${isAdmin ? "n.updated_at," : ""}
+                n.created_at,
+                ${
+                    !isAdmin
+                        ? ""
+                        : `jsonb_build_object (
+                    'user_id', cb.user_id,
+                    'username', cb.username
+                ) as created_by,
+                jsonb_build_object (
+                    'user_id', ub.user_id,
+                    'username', ub.username
+                ) as updated_by,`
+                }
+                CASE WHEN COUNT(i)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(DISTINCT i.image) END as images,
+                CASE WHEN COUNT(s)=0 THEN null ELSE jsonb_build_object (
+                    'section_id', s.section_id,
+                    'section_name', s.section_name,
+                    'color', s.color
+                ) END as section,
+                CASE WHEN COUNT(tn)=0 THEN null ELSE jsonb_build_object (
+                    'image_id', tn.image_id,
+                    'sizes', tn.sizes
+                ) END as thumbnail
+            FROM news n
+                LEFT JOIN users cb ON cb.user_id=n.created_by
+                LEFT JOIN users ub ON ub.user_id=n.updated_by
+                LEFT JOIN sections s ON s.section_id=n.section
+                LEFT JOIN images tn ON tn.image_id=n.thumbnail
+                LEFT JOIN (
+                    SELECT
+                        ni.news_id,
+                        jsonb_build_object (
+                            'image_id', i.image_id,
+                            'sizes', i.sizes
+                        ) as image
+                    FROM news_image ni
+                        LEFT JOIN images i ON i.image_id=ni.image_id
+                ) as i
+                    ON i.news_id=n.news_id
+            ${filter || ""}
+            GROUP BY n.news_id, ${
+                !isAdmin ? "" : "cb.user_id, ub.user_id,"
+            } s.section_id, tn.image_id
+            ${order || "ORDER BY n.created_at desc"}
+            ${limit || "LIMIT 100"}
+            ${offset || ""}
+        `;
+
+export async function getNews(req: Request, res: Response, next: NextFunction) {
+    try {
+        const { newsId } = req.params;
+
+        const {
+            rows: [news],
+        }: QueryResult<INews> = await pool.query(
+            `
             SELECT
                 n.news_id,
                 n.intro,
@@ -89,21 +151,9 @@ const newsQuery = (
                         LEFT JOIN images i ON i.image_id=ni.image_id
                 ) as i
                     ON i.news_id=n.news_id
-            ${filter || ""}
+            WHERE n.news_id=$1
             GROUP BY n.news_id, cb.user_id, ub.user_id, s.section_id, tn.image_id, f.file_id, f.text, f.image
-            ${order || "ORDER BY n.created_at desc"}
-            ${limit || "LIMIT 100"}
-            ${offset || ""}
-        `;
-
-export async function getNews(req: Request, res: Response, next: NextFunction) {
-    try {
-        const { newsId } = req.params;
-
-        const {
-            rows: [news],
-        }: QueryResult<INews> = await pool.query(
-            newsQuery("WHERE n.news_id=$1", "", "", ""),
+            `,
             [newsId]
         );
 
@@ -129,8 +179,18 @@ export async function getAllNews(
     next: NextFunction
 ) {
     try {
-        let { p, r, type, sectionId, tag, mvn, newsId, fileId, text }: any =
-            req.query;
+        let {
+            p,
+            r,
+            type,
+            sectionId,
+            tag,
+            mvn,
+            newsId,
+            fileId,
+            text,
+            isAdmin,
+        }: any = req.query;
 
         p = Number(p);
         r = r ? Number(r) : 20;
@@ -156,6 +216,7 @@ export async function getAllNews(
 
         const { rows: news }: QueryResult<INews> = await pool.query(
             newsQuery(
+                isAdmin ? true : false,
                 p
                     ? `WHERE
                     ${fileId ? `n.file='${fileId}' AND` : ""}
@@ -670,23 +731,24 @@ export async function homeInfo(
             `
         );
 
-        const { rows: files } = await pool.query(
-            `
-            SELECT
-                f.file_id,
-                f.text,
-                f.created_at,
-                jsonb_build_object (
-                    'image_id', i.image_id,
-                    'sizes', i.sizes
-                ) as image
-            FROM files f
-                LEFT JOIN images i ON i.image_id=f.image_id
-            `
-        );
+        // const { rows: files } = await pool.query(
+        //     `
+        //     SELECT
+        //         f.file_id,
+        //         f.text,
+        //         f.created_at,
+        //         jsonb_build_object (
+        //             'image_id', i.image_id,
+        //             'sizes', i.sizes
+        //         ) as image
+        //     FROM files f
+        //         LEFT JOIN images i ON i.image_id=f.image_id
+        //     `
+        // );
 
         const { rows: tmrNews } = await pool.query(
             newsQuery(
+                false,
                 "WHERE n.created_at > now()::date - 7",
                 "ORDER BY n.readers desc, n.created_by DESC",
                 "LIMIT 10",
@@ -745,7 +807,7 @@ export async function homeInfo(
 
         return res
             .status(200)
-            .json({ sections, strips, files, tmrNews, article });
+            .json({ sections, strips, files: [], tmrNews, article });
     } catch (err) {
         return next(err);
     }
