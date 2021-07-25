@@ -799,6 +799,7 @@ export async function homeInfo(
                         LEFT JOIN images i ON i.image_id=ni.image_id
                 ) as i
                     ON i.article_id=a.article_id
+                WHERE a.is_published=true
                 GROUP BY a.article_id, cb.user_id, cb.username, cb.avatar, tn.image_id
                 ORDER BY a.created_at desc
                 LIMIT 1

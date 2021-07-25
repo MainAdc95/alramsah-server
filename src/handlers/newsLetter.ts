@@ -14,7 +14,7 @@ const newsLetterQuery = (
         nl.created_at
     FROM news_letter nl
     ${filter || ""}
-    ${order || "ORDER BY created_by DESC"}
+    ${order || "ORDER BY created_at DESC"}
     ${limit || "LIMIT 100"}
     ${offset || ""}
 `;
