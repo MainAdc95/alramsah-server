@@ -190,6 +190,7 @@ export async function getAllNews(
             fileId,
             text,
             isAdmin,
+            order,
         }: any = req.query;
 
         p = Number(p);
@@ -208,7 +209,7 @@ export async function getAllNews(
             is_archived=${type === "archived" ? true : false}
             ${sectionId ? `AND section='${sectionId}'` : ""}
             ${fileId ? `AND file='${fileId}'` : ""}
-            ${text ? `AND title @@ to_tsquery('${text}')` : ""}
+            ${text ? `AND n.title LIKE '%${text}%'` : ""}
             `
         );
 
@@ -220,7 +221,7 @@ export async function getAllNews(
                 p
                     ? `WHERE
                     ${fileId ? `n.file='${fileId}' AND` : ""}
-                    ${text ? `n.title @@ to_tsquery('${text}') AND` : ""}
+                    ${text ? `n.title LIKE '%${text}%' AND` : ""}
                     ${sectionId ? `n.section='${sectionId}' AND` : ""}
                     ${
                         tag
@@ -232,7 +233,9 @@ export async function getAllNews(
                     is_archived=${type === "archived" ? true : false}
                     `
                     : "",
-                mvn ? `ORDER BY n.readers desc` : "",
+                `ORDER BY  n.created_at ${order || "desc"} ${
+                    mvn ? ", n.readers desc" : ""
+                }`,
                 r ? `LIMIT ${r}` : "",
                 `OFFSET ${sum(p, r)}`
             )

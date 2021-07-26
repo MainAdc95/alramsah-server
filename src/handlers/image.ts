@@ -162,12 +162,40 @@ export async function deleteImage(
     }
 }
 
+const sum = (times: number, value: number) => {
+    let totalValue = 0;
+
+    for (let i = 0; i < times; i++) {
+        totalValue += value;
+    }
+
+    return totalValue - value;
+};
+
 export async function getImages(
     req: Request,
     res: Response,
     next: NextFunction
 ) {
     try {
+        let { p, r, date, search }: any = req.query;
+
+        p = Number(p);
+        r = r ? Number(r) : 20;
+
+        let {
+            rows: [{ results }],
+        } = await pool.query(
+            `
+            SELECT 
+                COUNT(*) as results 
+            FROM images
+            ${search ? `WHERE image_description LIKE '%${search}%'` : ""}
+            `
+        );
+
+        results = Number(results);
+
         const { rows: images } = await pool.query(
             `
             SELECT
@@ -177,10 +205,17 @@ export async function getImages(
                 i.created_at
             FROM images i
                 LEFT JOIN users u ON u.user_id=i.created_by
+            ${search ? `WHERE image_description LIKE '%${search}%'` : ""}
+            ORDER BY created_at ${date === "desc" ? "desc" : "asc"}
+            ${r ? `LIMIT ${r}` : ""}
+            OFFSET ${sum(p, r)}
             `
         );
 
-        return res.status(200).json(images);
+        return res.status(200).json({
+            results,
+            images,
+        });
     } catch (err) {
         return next(err);
     }
