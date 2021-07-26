@@ -233,9 +233,9 @@ export async function getAllNews(
                     is_archived=${type === "archived" ? true : false}
                     `
                     : "",
-                `ORDER BY  n.created_at ${order || "desc"} ${
-                    mvn ? ", n.readers desc" : ""
-                }`,
+                mvn
+                    ? "ORDER BY n.readers desc"
+                    : `ORDER BY  n.created_at ${order || "desc"}`,
                 r ? `LIMIT ${r}` : "",
                 `OFFSET ${sum(p, r)}`
             )
