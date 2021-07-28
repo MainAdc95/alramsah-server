@@ -143,6 +143,7 @@ CREATE TABLE IF NOT EXISTS news (
     resources JSONB,
     section uuid REFERENCES sections(section_id) ON DELETE NO ACTION ON UPDATE CASCADE,
     readers INT DEFAULT 0,
+    thumbnail_description TEXT,
     file uuid REFERENCES files(file_id) ON DELETE NO ACTION ON UPDATE CASCADE,
     is_published BOOLEAN DEFAULT FALSE,
     is_archived BOOLEAN DEFAULT FALSE,
@@ -151,6 +152,8 @@ CREATE TABLE IF NOT EXISTS news (
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- alter table news add thumbnail_description TEXT;
 
 -- alter table news drop column readers;
 -- ALTER TABLE news ADD readers INT DEFAULT 0;

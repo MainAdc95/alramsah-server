@@ -19,6 +19,7 @@ const newsQuery = (
                 n.news_id,
                 n.title,
                 n.readers,
+                is_archived,
                 ${isAdmin ? "n.updated_at," : ""}
                 n.created_at,
                 ${
@@ -85,6 +86,7 @@ export async function getNews(req: Request, res: Response, next: NextFunction) {
                 n.sub_titles,
                 n.resources,
                 n.is_archived,
+                n.thumbnail_description,
                 n.updated_at,
                 n.created_at,
                 n.is_published,
@@ -105,6 +107,7 @@ export async function getNews(req: Request, res: Response, next: NextFunction) {
                 ) END as section,
                 CASE WHEN COUNT(tn)=0 THEN null ELSE jsonb_build_object (
                     'image_id', tn.image_id,
+                    'image_description', tn.image_description,
                     'sizes', tn.sizes
                 ) END as thumbnail,
                 CASE WHEN COUNT(f)=0 THEN null ELSE jsonb_build_object (
@@ -123,6 +126,7 @@ export async function getNews(req: Request, res: Response, next: NextFunction) {
                         f.text,
                         jsonb_build_object (
                             'image_id', i.image_id,
+                            'image_description', i.image_description,
                             'sizes', i.sizes
                         ) as image
                     FROM files f
@@ -265,6 +269,7 @@ export async function addNews(req: Request, res: Response, next: NextFunction) {
             resources,
             thumbnail,
             is_published,
+            thumbnail_description,
         } = req.body;
 
         title = String(title).trim();
@@ -289,12 +294,13 @@ export async function addNews(req: Request, res: Response, next: NextFunction) {
                 updated_by,
                 created_at,
                 updated_at,
-                is_published
+                is_published,
+                thumbnail_description
                 ${section ? `, section` : ""}
                 ${file ? `, file` : ""}
             ) VALUES (${
                 thumbnail ? `'${thumbnail.image_id}',` : ""
-            } $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+            } $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
             ${section ? `, '${section}'` : ""}
             ${file ? `, '${file}'` : ""}
             )
@@ -325,6 +331,7 @@ export async function addNews(req: Request, res: Response, next: NextFunction) {
                 date,
                 date,
                 is_published,
+                thumbnail_description,
             ]
         );
 
@@ -381,6 +388,7 @@ export async function editNews(
             subTitles,
             resources,
             thumbnail,
+            thumbnail_description,
         } = req.body;
 
         title = String(title).trim();
@@ -400,11 +408,12 @@ export async function editNews(
                     sub_titles=$4,
                     updated_by=$5,
                     updated_at=$6,
-                    resources=$7
+                    resources=$7,
+                    thumbnail_description=$8
                     ${section ? `, section='${section}'` : ""}
                     ${thumbnail ? `, thumbnail='${thumbnail.image_id}'` : ""}
                     ${file ? `, file='${file}'` : ""}
-                WHERE news_id=$8
+                WHERE news_id=$9
                 `,
             [
                 intro,
@@ -428,6 +437,7 @@ export async function editNews(
                           }))
                         : []
                 ),
+                thumbnail_description,
                 newsId,
             ]
         );
@@ -583,7 +593,7 @@ export async function permanentlyDeleteNews(
 ) {
     try {
         const { newsId } = req.params;
-
+        console.log(newsId);
         await pool.query(`DELETE FROM news WHERE news_id=$1`, [newsId]);
 
         return res
@@ -713,7 +723,7 @@ export async function homeInfo(
                     WHERE n.is_published=true AND n.section=$1
                     GROUP BY n.news_id, tn.image_id
                     ORDER BY n.created_at desc
-                    LIMIT 6
+                    LIMIT ${section.section_name === "سياسة" ? 10 : 1}
                 `,
                 [section.section_id]
             );
