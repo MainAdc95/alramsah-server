@@ -36,22 +36,24 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteSection = exports.editSection = exports.addSection = exports.getSections = exports.getSection = void 0;
+exports.deleteStrip = exports.editStrip = exports.addStrip = exports.getStrips = exports.getStrip = void 0;
 var db_1 = require("../utils/db");
 var uuid_1 = require("uuid");
-var query = function (filter, order) { return "\n            SELECT\n                s.section_id,\n                s.section_name,\n                s.color,\n                s.updated_at,\n                s.created_at,\n                s.section_order,\n                jsonb_build_object (\n                    'user_id', cb.user_id,\n                    'username', cb.username\n                ) as created_by,\n                jsonb_build_object (\n                    'user_id', ub.user_id,\n                    'username', ub.username\n                ) as updated_by\n            FROM sections s\n                LEFT JOIN users cb ON cb.user_id=s.created_by\n                LEFT JOIN users ub ON ub.user_id=s.updated_by\n            " + filter + "\n            GROUP BY s.section_id, cb.user_id, ub.user_id\n            " + order + "\n        "; };
-function getSection(req, res, next) {
+var stripQuery = function (filter, order, limit, offset) { return "\n    SELECT\n        s.strip_id,\n        s.title,\n        s.link,\n        s.duration,\n        s.type,\n        s.created_at,\n        s.updated_at,\n        jsonb_build_object (\n            'user_id', cb.user_id,\n            'username', cb.username\n        ) as created_by,\n        jsonb_build_object (\n            'user_id', ub.user_id,\n            'username', ub.username\n        ) as updated_by\n    FROM strips s\n        LEFT JOIN users cb ON cb.user_id=s.created_by\n        LEFT JOIN users ub ON ub.user_id=s.updated_by\n    " + (filter || "") + "\n    GROUP BY s.strip_id, cb.user_id, ub.user_id\n    " + (order || "ORDER BY s.created_at desc") + "\n    " + (limit || "LIMIT 100") + "\n    " + (offset || "") + "\n"; };
+function getStrip(req, res, next) {
     return __awaiter(this, void 0, void 0, function () {
-        var sectionId, section, err_1;
+        var stripId, strip, err_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     _a.trys.push([0, 2, , 3]);
-                    sectionId = req.params.sectionId;
-                    return [4 /*yield*/, db_1.pool.query(query("WHERE s.section_id=$1", ""), [sectionId])];
+                    stripId = req.params.stripId;
+                    return [4 /*yield*/, db_1.pool.query(stripQuery("WHERE s.strip_id=$1", "", "", ""), [
+                            stripId,
+                        ])];
                 case 1:
-                    section = (_a.sent()).rows[0];
-                    return [2 /*return*/, res.status(200).json(section)];
+                    strip = (_a.sent()).rows[0];
+                    return [2 /*return*/, res.status(200).json(strip)];
                 case 2:
                     err_1 = _a.sent();
                     return [2 /*return*/, next(err_1)];
@@ -60,74 +62,52 @@ function getSection(req, res, next) {
         });
     });
 }
-exports.getSection = getSection;
-function getSections(req, res, next) {
+exports.getStrip = getStrip;
+function getStrips(req, res, next) {
     return __awaiter(this, void 0, void 0, function () {
-        var sections, err_2;
+        var strips, err_2, err_3;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    _a.trys.push([0, 2, , 3]);
-                    return [4 /*yield*/, db_1.pool.query(query("", ""))];
+                    _a.trys.push([0, 5, , 6]);
+                    _a.label = 1;
                 case 1:
-                    sections = (_a.sent()).rows;
-                    return [2 /*return*/, res.status(200).json(sections)];
+                    _a.trys.push([1, 3, , 4]);
+                    return [4 /*yield*/, db_1.pool.query(stripQuery("", "", "", ""))];
                 case 2:
+                    strips = (_a.sent()).rows;
+                    return [2 /*return*/, res.status(200).json(strips)];
+                case 3:
                     err_2 = _a.sent();
                     return [2 /*return*/, next(err_2)];
-                case 3: return [2 /*return*/];
+                case 4: return [3 /*break*/, 6];
+                case 5:
+                    err_3 = _a.sent();
+                    return [2 /*return*/, next(err_3)];
+                case 6: return [2 /*return*/];
             }
         });
     });
 }
-exports.getSections = getSections;
-function addSection(req, res, next) {
+exports.getStrips = getStrips;
+function addStrip(req, res, next) {
     return __awaiter(this, void 0, void 0, function () {
-        var authId, _a, section_name, color, sectionId, date, err_3;
+        var authId, _a, title, link, duration, type, stripId, date, err_4;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
                     _b.trys.push([0, 2, , 3]);
                     authId = req.query.authId;
-                    _a = req.body, section_name = _a.section_name, color = _a.color;
-                    section_name = String(section_name).trim();
-                    color = String(color).trim();
-                    sectionId = uuid_1.v4();
+                    _a = req.body, title = _a.title, link = _a.link, duration = _a.duration, type = _a.type;
+                    title = String(title).trim();
+                    link = String(link).trim();
+                    type = String(type).trim();
+                    stripId = uuid_1.v4();
                     date = new Date();
-                    // ______________________________ add sections
-                    return [4 /*yield*/, db_1.pool.query("\n            INSERT INTO sections (\n                section_id,\n                color,\n                section_name,\n                created_by,\n                updated_by,\n                created_at,\n                updated_at\n            ) VALUES ($1, $2, $3, $4, $5, $6, $7)\n        ", [sectionId, color, section_name, authId, authId, date, date])];
+                    return [4 /*yield*/, db_1.pool.query("\n            INSERT INTO strips (\n                strip_id,\n                title,\n                link,\n                duration,\n                type,\n                created_at,\n                updated_at,\n                updated_by,\n                created_by\n            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)\n            ", [stripId, title, link, duration, type, date, date, authId, authId])];
                 case 1:
-                    // ______________________________ add sections
                     _b.sent();
                     return [2 /*return*/, res.status(201).json("")];
-                case 2:
-                    err_3 = _b.sent();
-                    return [2 /*return*/, next(err_3)];
-                case 3: return [2 /*return*/];
-            }
-        });
-    });
-}
-exports.addSection = addSection;
-function editSection(req, res, next) {
-    return __awaiter(this, void 0, void 0, function () {
-        var authId, sectionId, _a, section_name, color, date, err_4;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
-                case 0:
-                    _b.trys.push([0, 2, , 3]);
-                    authId = req.query.authId;
-                    sectionId = req.params.sectionId;
-                    _a = req.body, section_name = _a.section_name, color = _a.color;
-                    section_name = String(section_name).trim();
-                    color = String(color).trim();
-                    date = new Date();
-                    // ______________________________ add sections
-                    return [4 /*yield*/, db_1.pool.query("\n            UPDATE sections\n            SET\n                color=$1,\n                section_name=$2,\n                updated_by=$3,\n                updated_at=$4\n            WHERE section_id=$5\n        ", [color, section_name, authId, date, sectionId])];
-                case 1:
-                    // ______________________________ add sections
-                    _b.sent();
-                    return [2 /*return*/, res.status(200).json("")];
                 case 2:
                     err_4 = _b.sent();
                     return [2 /*return*/, next(err_4)];
@@ -136,27 +116,54 @@ function editSection(req, res, next) {
         });
     });
 }
-exports.editSection = editSection;
-function deleteSection(req, res, next) {
+exports.addStrip = addStrip;
+function editStrip(req, res, next) {
     return __awaiter(this, void 0, void 0, function () {
-        var sectionId, err_5;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var authId, stripId, _a, title, link, duration, type, date, err_5;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
-                    _a.trys.push([0, 2, , 3]);
-                    sectionId = req.params.sectionId;
-                    return [4 /*yield*/, db_1.pool.query("DELETE FROM sections WHERE section_id=$1", [
-                            sectionId,
-                        ])];
+                    _b.trys.push([0, 2, , 3]);
+                    authId = req.query.authId;
+                    stripId = req.params.stripId;
+                    _a = req.body, title = _a.title, link = _a.link, duration = _a.duration, type = _a.type;
+                    title = String(title).trim();
+                    link = String(link).trim();
+                    type = String(type).trim();
+                    date = new Date();
+                    return [4 /*yield*/, db_1.pool.query("\n            UPDATE strips\n            SET\n                link=$1,\n                duration=$2,\n                type=$3,\n                updated_at=$4,\n                updated_by=$5,\n                title=$6\n            WHERE strip_id=$7\n            ", [link, duration, type, date, authId, title, stripId])];
                 case 1:
-                    _a.sent();
+                    _b.sent();
                     return [2 /*return*/, res.status(200).json("")];
                 case 2:
-                    err_5 = _a.sent();
+                    err_5 = _b.sent();
                     return [2 /*return*/, next(err_5)];
                 case 3: return [2 /*return*/];
             }
         });
     });
 }
-exports.deleteSection = deleteSection;
+exports.editStrip = editStrip;
+function deleteStrip(req, res, next) {
+    return __awaiter(this, void 0, void 0, function () {
+        var stripId, err_6;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 2, , 3]);
+                    stripId = req.params.stripId;
+                    return [4 /*yield*/, db_1.pool.query("DELETE FROM strips WHERE strip_id=$1", [stripId])];
+                case 1:
+                    _a.sent();
+                    return [2 /*return*/, res
+                            .status(200)
+                            .json({ messages: "You have successfully deleted a strip." })];
+                case 2:
+                    err_6 = _a.sent();
+                    return [2 /*return*/, next(err_6)];
+                case 3: return [2 /*return*/];
+            }
+        });
+    });
+}
+exports.deleteStrip = deleteStrip;

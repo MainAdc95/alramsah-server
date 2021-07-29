@@ -48,7 +48,7 @@ var jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 var config_1 = __importDefault(require("../config"));
 var uuid_1 = require("uuid");
 var email_1 = require("../utils/email");
-var userQuery = function (filter) { return "    \n    SELECT\n        u.user_id,\n        jsonb_build_object (\n            'image_id', ui.image_id,\n            'image_id', ui.image_id\n        ) as avatar,\n        u.username,\n        u.first_name,\n        u.last_name,\n        u.email,\n        u.phone,\n        u.password,\n        u.version,\n        u.is_admin,\n        u.is_active,\n        u.is_blocked,\n        u.is_super_admin,\n        u.is_editor,\n        u.is_reporter\n    FROM users u\n        LEFT JOIN user_images ui ON u.avatar=ui.image_id\n    " + (filter || "") + "\n"; };
+var userQuery = function (filter) { return "    \n    SELECT\n        u.user_id,\n        jsonb_build_object (\n            'image_id', ui.image_id,\n            'image_id', ui.image_id\n        ) as avatar,\n        u.username,\n        u.first_name,\n        u.last_name,\n        u.email,\n        u.phone,\n        u.password,\n        u.version,\n        u.is_admin_assistant,\n        u.is_writer,\n        u.is_admin,\n        u.is_active,\n        u.is_blocked,\n        u.is_super_admin,\n        u.is_editor,\n        u.is_reporter\n    FROM users u\n        LEFT JOIN user_images ui ON u.avatar=ui.image_id\n    " + (filter || "") + "\n"; };
 function signup(req, res, next) {
     return __awaiter(this, void 0, void 0, function () {
         var _a, username, first_name, last_name, email, phone, password, password2, errors, foundUsername, foundEmail, _i, _b, v, hashPassword, userId, accountActivationToken, activationLink, html, user, user_id, err_1;
@@ -150,7 +150,7 @@ function signup(req, res, next) {
                     // creating a user in the data base
                     return [4 /*yield*/, db_1.pool.query("INSERT INTO users (\n                user_id,\n                avatar,\n                username,\n                first_name,\n                last_name,\n                email,\n                phone,\n                password,\n                version\n            ) \n            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) \n            ", [
                             userId,
-                            "e5daee20-3122-4481-9898-4682624fae09",
+                            "2d06f735-f13c-4142-803b-6834648fed2d",
                             username,
                             first_name,
                             last_name,
@@ -186,7 +186,7 @@ function signup(req, res, next) {
 exports.signup = signup;
 function signin(req, res, next) {
     return __awaiter(this, void 0, void 0, function () {
-        var _a, identifier, password, user, user, isMatch, user_id, version, is_admin, is_super_admin, is_editor, is_reporter, err_2;
+        var _a, identifier, password, user, user, isMatch, user_id, version, is_admin, is_super_admin, is_editor, is_admin_assistant, is_writer, is_reporter, err_2;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
@@ -234,7 +234,7 @@ function signin(req, res, next) {
                                 status: 400,
                                 message: "Your account has been blocked please contact us to know why, thank you.",
                             })];
-                    user_id = user.user_id, version = user.version, is_admin = user.is_admin, is_super_admin = user.is_super_admin, is_editor = user.is_editor, is_reporter = user.is_reporter;
+                    user_id = user.user_id, version = user.version, is_admin = user.is_admin, is_super_admin = user.is_super_admin, is_editor = user.is_editor, is_admin_assistant = user.is_admin_assistant, is_writer = user.is_writer, is_reporter = user.is_reporter;
                     // generating a jsonwebtoken for authentication and saving them in the cookies
                     authCookies_1.setAuthCookies(res, {
                         version: version,
@@ -242,6 +242,8 @@ function signin(req, res, next) {
                         is_super_admin: is_super_admin,
                         user_id: user_id,
                         is_editor: is_editor,
+                        is_admin_assistant: is_admin_assistant,
+                        is_writer: is_writer,
                         is_reporter: is_reporter,
                     });
                     return [2 /*return*/, res.status(200).json({
@@ -255,6 +257,8 @@ function signin(req, res, next) {
                             version: version,
                             is_admin: is_admin,
                             is_super_admin: is_super_admin,
+                            is_admin_assistant: is_admin_assistant,
+                            is_writer: is_writer,
                             is_editor: is_editor,
                             is_reporter: is_reporter,
                         })];
@@ -281,7 +285,7 @@ function signinOnload(req, res, next) {
                         message: "Please login first.",
                     })];
             jsonwebtoken_1.default.verify(token, config_1.default.jwtSecret, function (err, decoded) { return __awaiter(_this, void 0, void 0, function () {
-                var user, username, first_name, last_name, email, phone, user_id, avatar, version, is_admin, is_super_admin, is_editor, is_reporter, err_3;
+                var user, username, first_name, last_name, email, phone, user_id, avatar, version, is_admin, is_super_admin, is_editor, is_reporter, is_admin_assistant, is_writer, err_3;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
@@ -302,7 +306,7 @@ function signinOnload(req, res, next) {
                                         status: 400,
                                         message: "Your account has been blocked please contact us to know why, thank you.",
                                     })];
-                            username = user.username, first_name = user.first_name, last_name = user.last_name, email = user.email, phone = user.phone, user_id = user.user_id, avatar = user.avatar, version = user.version, is_admin = user.is_admin, is_super_admin = user.is_super_admin, is_editor = user.is_editor, is_reporter = user.is_reporter;
+                            username = user.username, first_name = user.first_name, last_name = user.last_name, email = user.email, phone = user.phone, user_id = user.user_id, avatar = user.avatar, version = user.version, is_admin = user.is_admin, is_super_admin = user.is_super_admin, is_editor = user.is_editor, is_reporter = user.is_reporter, is_admin_assistant = user.is_admin_assistant, is_writer = user.is_writer;
                             if (decoded.user_id !== req.params.id) {
                                 // user detials
                                 if (version !== decoded.version) {
@@ -312,6 +316,8 @@ function signinOnload(req, res, next) {
                                         is_admin: is_admin,
                                         is_super_admin: is_super_admin,
                                         user_id: user_id,
+                                        is_admin_assistant: is_admin_assistant,
+                                        is_writer: is_writer,
                                         is_editor: is_editor,
                                         is_reporter: is_reporter,
                                     });
@@ -326,6 +332,8 @@ function signinOnload(req, res, next) {
                                     phone: phone,
                                     version: version,
                                     avatar: avatar,
+                                    is_admin_assistant: is_admin_assistant,
+                                    is_writer: is_writer,
                                     is_admin: is_admin,
                                     is_super_admin: is_super_admin,
                                     is_editor: is_editor,

@@ -55,7 +55,7 @@ var isLoggedIn = function (req, res, next) {
             message: "please login first.",
         });
     jsonwebtoken_1.default.verify(token, config_1.default.jwtSecret, function (err, decoded) { return __awaiter(_this, void 0, void 0, function () {
-        var authId, user, user_id, version, is_admin, is_super_admin, is_editor, is_reporter, err_1;
+        var authId, user, user_id, version, is_admin, is_super_admin, is_admin_assistant, is_writer, is_editor, is_reporter, err_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -64,7 +64,7 @@ var isLoggedIn = function (req, res, next) {
                         return [2 /*return*/, next(err)];
                     authId = req.query.authId;
                     if (!(decoded.user_id === authId)) return [3 /*break*/, 2];
-                    return [4 /*yield*/, db_1.pool.query("\n                    SELECT\n                        user_id,\n                        version,\n                        is_active,\n                        is_blocked,\n                        is_admin,\n                        is_super_admin,\n                        is_editor,\n                        is_reporter\n                    FROM users \n                    WHERE user_id=$1\n                    ", [authId])];
+                    return [4 /*yield*/, db_1.pool.query("\n                    SELECT\n                        user_id,\n                        version,\n                        is_active,\n                        is_blocked,\n                        is_admin,\n                        is_super_admin,\n                        is_admin_assistant,\n                        is_writer,\n                        is_editor,\n                        is_reporter\n                    FROM users \n                    WHERE user_id=$1\n                    ", [authId])];
                 case 1:
                     user = (_a.sent()).rows[0];
                     if (!user.is_active)
@@ -77,12 +77,14 @@ var isLoggedIn = function (req, res, next) {
                                 status: 400,
                                 message: "Your account has been blocked please contact us to know why, thank you.",
                             })];
-                    user_id = user.user_id, version = user.version, is_admin = user.is_admin, is_super_admin = user.is_super_admin, is_editor = user.is_editor, is_reporter = user.is_reporter;
+                    user_id = user.user_id, version = user.version, is_admin = user.is_admin, is_super_admin = user.is_super_admin, is_admin_assistant = user.is_admin_assistant, is_writer = user.is_writer, is_editor = user.is_editor, is_reporter = user.is_reporter;
                     if (version !== decoded.version) {
                         authCookies_1.setAuthCookies(res, {
                             version: version,
                             is_admin: is_admin,
                             is_super_admin: is_super_admin,
+                            is_admin_assistant: is_admin_assistant,
+                            is_writer: is_writer,
                             user_id: user_id,
                             is_editor: is_editor,
                             is_reporter: is_reporter,

@@ -42,7 +42,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.editRole = exports.editProfile = exports.manageUserRole = exports.getUsers = void 0;
 var validators_1 = __importDefault(require("../utils/validators"));
 var db_1 = require("../utils/db");
-var userQuery = function (filter, order, limit) { return "\n            SELECT\n                u.user_id,\n                u.first_name,\n                u.last_name,\n                u.username,\n                u.email,\n                u.phone,\n                u.is_editor,\n                u.is_reporter,\n                u.is_admin,\n                u.is_super_admin,\n                u.is_active,\n                u.is_blocked,\n                u.created_at,\n                u.updated_at,\n                jsonb_build_object (\n                    'image_id', ui.image_id,\n                    'image_id', ui.image_id\n                ) as avatar\n            FROM users u\n                LEFT JOIN users uu ON u.user_id=uu.user_id\n                LEFT JOIN users cu ON u.user_id=cu.user_id\n                LEFT JOIN user_images ui ON ui.image_id=u.avatar\n            " + filter + "\n            GROUP BY u.user_id, ui.image_id\n            " + (order || "ORDER BY u.created_at desc") + "\n            " + (limit || "LIMIT 100") + "\n        "; };
+var userQuery = function (filter, order, limit) { return "\n            SELECT\n                u.user_id,\n                u.first_name,\n                u.last_name,\n                u.username,\n                u.email,\n                u.phone,\n                u.is_editor,\n                u.is_reporter,\n                u.is_admin,\n                u.is_admin_assistant,\n                u.is_writer,\n                u.is_super_admin,\n                u.is_active,\n                u.is_blocked,\n                u.created_at,\n                u.updated_at,\n                jsonb_build_object (\n                    'image_id', ui.image_id,\n                    'sizes', ui.sizes\n                ) as avatar\n            FROM users u\n                LEFT JOIN users uu ON u.user_id=uu.user_id\n                LEFT JOIN users cu ON u.user_id=cu.user_id\n                LEFT JOIN user_images ui ON ui.image_id=u.avatar\n            " + filter + "\n            GROUP BY u.user_id, ui.image_id\n            " + (order || "ORDER BY u.created_at desc") + "\n            " + (limit || "LIMIT 100") + "\n        "; };
 function getUsers(req, res, next) {
     return __awaiter(this, void 0, void 0, function () {
         var _a, authId, p, r, count, users_1, users, err_1;
@@ -171,18 +171,20 @@ function editProfile(req, res, next) {
 exports.editProfile = editProfile;
 function editRole(req, res, next) {
     return __awaiter(this, void 0, void 0, function () {
-        var authId, userId, _a, is_reporter, is_editor, is_blocked, is_active, date, err_4;
+        var authId, userId, _a, is_writer, is_admin_assistant, is_reporter, is_editor, is_blocked, is_active, date, err_4;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
                     _b.trys.push([0, 2, , 3]);
                     authId = req.query.authId;
                     userId = req.params.userId;
-                    _a = req.body, is_reporter = _a.is_reporter, is_editor = _a.is_editor, is_blocked = _a.is_blocked, is_active = _a.is_active;
+                    _a = req.body, is_writer = _a.is_writer, is_admin_assistant = _a.is_admin_assistant, is_reporter = _a.is_reporter, is_editor = _a.is_editor, is_blocked = _a.is_blocked, is_active = _a.is_active;
                     date = new Date();
-                    return [4 /*yield*/, db_1.pool.query("\n            UPDATE users\n            SET\n                version=version + 1,\n                is_editor=$1,\n                is_reporter=$2,\n                is_blocked=$3,\n                is_active=$4,\n                updated_at=$5,\n                updated_by=$6\n            WHERE user_id=$7\n            ", [
-                            is_reporter,
+                    return [4 /*yield*/, db_1.pool.query("\n            UPDATE users\n            SET\n                version=version + 1,\n                is_editor=$1,\n                is_reporter=$2,\n                is_writer=$3,\n                is_admin_assistant=$4,\n                is_blocked=$5,\n                is_active=$6,\n                updated_at=$7,\n                updated_by=$8\n            WHERE user_id=$9\n            ", [
                             is_editor,
+                            is_reporter,
+                            is_writer,
+                            is_admin_assistant,
                             is_blocked,
                             is_active,
                             date,

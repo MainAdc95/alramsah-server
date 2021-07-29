@@ -120,25 +120,26 @@ export async function getArticles(
     next: NextFunction
 ) {
     try {
-        let { p, r, type, tag }: any = req.query;
+        let { p, r, type, tag, order, search }: any = req.query;
 
         p = Number(p);
         r = r ? Number(r) : 20;
 
         let {
-            rows: [{ count }],
+            rows: [{ results }],
         } = await pool.query(
-            `SELECT count(*) FROM articles a WHERE 
+            `SELECT count(*) as results FROM articles a WHERE 
             ${
                 tag
                     ? `a.article_id IN (select article_id from article_tag WHERE tag_id='${tag}') AND`
                     : ""
             }
             is_published=${type === "published" ? true : false} AND
-            is_archived=${type === "archived" ? true : false}`
+            is_archived=${type === "archived" ? true : false}
+            ${search ? `AND a.title LIKE '%${search}%'` : ""}`
         );
 
-        count = Number(count);
+        results = Number(results);
 
         const { rows: articles }: QueryResult<IArticle> = await pool.query(
             articleQuery(
@@ -149,18 +150,19 @@ export async function getArticles(
                             ? `a.article_id IN (select article_id from article_tag WHERE tag_id='${tag}') AND`
                             : ""
                     }
+                    ${search ? `a.title LIKE '%${search}%' AND` : ""}
                     is_published=${type === "published" ? true : false} AND
                     is_archived=${type === "archived" ? true : false}
                     `
                     : "",
-                "",
+                `ORDER BY  a.created_at ${order || "desc"}`,
                 r ? `LIMIT ${r}` : "",
                 `OFFSET ${sum(p, r)}`
             )
         );
 
         return res.status(200).json({
-            results: count,
+            results,
             articles,
         });
     } catch (err) {

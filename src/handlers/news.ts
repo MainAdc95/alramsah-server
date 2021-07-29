@@ -586,6 +586,187 @@ export async function editNews(
     }
 }
 
+export async function transformToArticle(
+    req: Request,
+    res: Response,
+    next: NextFunction
+) {
+    try {
+        const { authId } = req.query;
+        const { newsId } = req.params;
+
+        const {
+            rows: [news],
+        } = await pool.query(
+            `
+            SELECT
+                n.news_id,
+                n.intro,
+                n.title,
+                n.text,
+                n.readers,
+                n.sub_titles,
+                n.resources,
+                n.is_archived,
+                n.thumbnail_description,
+                n.updated_at,
+                n.created_at,
+                n.is_published,
+                jsonb_build_object (
+                    'user_id', cb.user_id,
+                    'username', cb.username
+                ) as created_by,
+                jsonb_build_object (
+                    'user_id', ub.user_id,
+                    'username', ub.username
+                ) as updated_by,
+                CASE WHEN COUNT(t)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(DISTINCT t.tag) END as tags,
+                CASE WHEN COUNT(i)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(DISTINCT i.image) END as images,
+                CASE WHEN COUNT(s)=0 THEN null ELSE jsonb_build_object (
+                    'section_id', s.section_id,
+                    'section_name', s.section_name,
+                    'color', s.color
+                ) END as section,
+                CASE WHEN COUNT(tn)=0 THEN null ELSE jsonb_build_object (
+                    'image_id', tn.image_id,
+                    'image_description', tn.image_description,
+                    'sizes', tn.sizes
+                ) END as thumbnail,
+                CASE WHEN COUNT(f)=0 THEN null ELSE jsonb_build_object (
+                    'file_id', f.file_id,
+                    'text', f.text,
+                    'image', f.image
+                ) END as file
+            FROM news n
+                LEFT JOIN users cb ON cb.user_id=n.created_by
+                LEFT JOIN users ub ON ub.user_id=n.updated_by
+                LEFT JOIN sections s ON s.section_id=n.section
+                LEFT JOIN images tn ON tn.image_id=n.thumbnail
+                LEFT JOIN (
+                    SELECT
+                        f.file_id,
+                        f.text,
+                        jsonb_build_object (
+                            'image_id', i.image_id,
+                            'image_description', i.image_description,
+                            'sizes', i.sizes
+                        ) as image
+                    FROM files f
+                        LEFT JOIN images i ON i.image_id=f.image_id
+                ) as f
+                    ON f.file_id=n.file
+                LEFT JOIN (
+                    SELECT
+                        nt.news_id,
+                        jsonb_build_object (
+                            'tag_id', t.tag_id,
+                            'tag_name', t.tag_name
+                        ) as tag
+                    FROM news_tag nt
+                        LEFT JOIN tags t ON t.tag_id=nt.tag_id
+                ) as t
+                    ON t.news_id=n.news_id
+                LEFT JOIN (
+                    SELECT
+                        ni.news_id,
+                        jsonb_build_object (
+                            'image_id', i.image_id,
+                            'sizes', i.sizes
+                        ) as image
+                    FROM news_image ni
+                        LEFT JOIN images i ON i.image_id=ni.image_id
+                ) as i
+                    ON i.news_id=n.news_id
+            WHERE n.news_id=$1
+            GROUP BY n.news_id, cb.user_id, ub.user_id, s.section_id, tn.image_id, f.file_id, f.text, f.image
+            `,
+            [newsId]
+        );
+
+        let {
+            intro,
+            title,
+            text,
+            images,
+            tags,
+            subTitles,
+            thumbnail,
+            is_published,
+            created_at,
+        } = news;
+
+        const articleId = uuid();
+        const date = new Date();
+
+        await pool.query(
+            `
+            INSERT INTO articles (
+                ${thumbnail ? "thumbnail, " : ""}
+                article_id,
+                intro,
+                title,
+                text,
+                sub_titles,
+                created_by,
+                updated_by,
+                created_at,
+                updated_at,
+                is_published
+            ) VALUES (${
+                thumbnail ? `'${thumbnail.image_id}',` : ""
+            } $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+            )
+        `,
+            [
+                articleId,
+                intro,
+                title,
+                text,
+                JSON.stringify(subTitles || []),
+                authId,
+                authId,
+                created_at,
+                date,
+                is_published,
+            ]
+        );
+
+        // ________________________________ images
+        if (images?.length)
+            await pool.query(
+                format(
+                    `
+                INSERT INTO article_image (
+                    article_id,
+                    image_id
+                ) VALUES %L
+                `,
+                    images.map((i: IImage) => [articleId, i.image_id])
+                )
+            );
+
+        // ___________________________ tags
+        if (tags?.length)
+            await pool.query(
+                format(
+                    `
+            INSERT INTO article_tag (
+                article_id,
+                tag_id
+            ) VALUES %L
+            `,
+                    tags.map((t: ITag) => [articleId, t.tag_id])
+                )
+            );
+
+        await pool.query(`DELETE FROM news WHERE news_id=$1`, [newsId]);
+
+        return res.status(201).json("");
+    } catch (err) {
+        return next(err);
+    }
+}
+
 export async function permanentlyDeleteNews(
     req: Request,
     res: Response,
@@ -593,7 +774,7 @@ export async function permanentlyDeleteNews(
 ) {
     try {
         const { newsId } = req.params;
-        console.log(newsId);
+
         await pool.query(`DELETE FROM news WHERE news_id=$1`, [newsId]);
 
         return res
@@ -656,14 +837,16 @@ export async function read(req: Request, res: Response, next: NextFunction) {
     try {
         const { newsId } = req.params;
 
+        const number = Math.ceil(Math.random() * (15 - 5) + 5);
+
         await pool.query(
             `
             UPDATE news
             SET
-                readers=readers + 8
-            WHERE news_id=$1
+                readers=readers + $1
+            WHERE news_id=$2
             `,
-            [newsId]
+            [number, newsId]
         );
 
         return res.status(200).json("");

@@ -11,7 +11,12 @@ interface IError {
     phone: string[];
 }
 
-const userQuery = (filter?: string, order?: string, limit?: string) => `
+const userQuery = (
+    filter?: string,
+    order?: string,
+    limit?: string,
+    offset?: string
+) => `
             SELECT
                 u.user_id,
                 u.first_name,
@@ -40,8 +45,19 @@ const userQuery = (filter?: string, order?: string, limit?: string) => `
             ${filter}
             GROUP BY u.user_id, ui.image_id
             ${order || "ORDER BY u.created_at desc"}
-            ${limit || "LIMIT 100"}
+            ${limit || ""}
+            ${offset || ""}
         `;
+
+const sum = (times: number, value: number) => {
+    let totalValue = 0;
+
+    for (let i = 0; i < times; i++) {
+        totalValue += value;
+    }
+
+    return totalValue - value;
+};
 
 export async function getUsers(
     req: Request,
@@ -49,36 +65,39 @@ export async function getUsers(
     next: NextFunction
 ) {
     try {
-        const { authId, p, r } = req.query;
+        let { authId, p, r }: any = req.query;
 
-        if (p || r) {
-            const {
-                rows: [{ count }],
-            } = await pool.query(`SELECT count(*) FROM users`);
+        p = Number(p);
+        r = r ? Number(r) : 20;
 
-            const { rows: users }: QueryResult<IUser> = await pool.query(
-                userQuery(
-                    `WHERE u.user_id != $1 AND u.is_super_admin != true AND u.user_order < ${
-                        Number(Number(p) === 1 ? count + 1 : count) / Number(p)
-                    }`,
-                    "",
-                    r ? `LIMIT ${r}` : ""
-                ),
-                [authId]
-            );
-
-            return res.status(200).json({
-                results: count,
-                users,
-            });
-        }
-
-        const { rows: users }: QueryResult<IUser> = await pool.query(
-            userQuery("WHERE u.user_id != $1 AND u.is_super_admin != true"),
+        let {
+            rows: [{ results }],
+        } = await pool.query(
+            `
+            SELECT 
+                count(*) as results 
+            FROM users
+            WHERE user_id != $1
+            `,
             [authId]
         );
 
-        return res.status(200).json(users);
+        results = Number(results);
+
+        const { rows: users }: QueryResult<IUser> = await pool.query(
+            userQuery(
+                "WHERE u.user_id != $1",
+                "",
+                r ? `LIMIT ${r}` : "",
+                `OFFSET ${sum(p, r)}`
+            ),
+            [authId]
+        );
+
+        return res.status(200).json({
+            results,
+            users,
+        });
     } catch (err) {
         return next(err);
     }

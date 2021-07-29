@@ -296,10 +296,11 @@ export async function deletePoll(
 export async function vote(req: Request, res: Response, next: NextFunction) {
     try {
         const { optionId } = req.params;
-
+        const { number } = req.body;
+        console.log(req.body);
         await pool.query(
-            `UPDATE poll_options SET votes = votes + 8 WHERE option_id=$1`,
-            [optionId]
+            `UPDATE poll_options SET votes = votes + $1 WHERE option_id=$2`,
+            [number, optionId]
         );
 
         return res.status(200).json("");

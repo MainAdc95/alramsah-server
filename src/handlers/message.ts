@@ -6,7 +6,12 @@ import format from "pg-format";
 import { IMessage } from "../models/message";
 import { IImage } from "../models/image";
 
-const messageQuery = (filter?: string, order?: string, limit?: string) => `
+const messageQuery = (
+    filter?: string,
+    order?: string,
+    limit?: string,
+    offset?: string
+) => `
     SELECT
         m.message_id,
         m.subject,
@@ -34,7 +39,8 @@ const messageQuery = (filter?: string, order?: string, limit?: string) => `
     ${filter || ""}
     GROUP BY m.message_id, cb.user_id
     ${order || "ORDER BY m.created_at desc"}
-    ${limit || "LIMIT 100"}
+    ${limit || ""}
+    ${offset || ""}
 `;
 
 export async function getMessage(
@@ -57,40 +63,51 @@ export async function getMessage(
     }
 }
 
+const sum = (times: number, value: number) => {
+    let totalValue = 0;
+
+    for (let i = 0; i < times; i++) {
+        totalValue += value;
+    }
+
+    return totalValue - value;
+};
+
 export async function getMessages(
     req: Request,
     res: Response,
     next: NextFunction
 ) {
     try {
-        const { p, r, authId } = req.query;
+        let { p, r, authId }: any = req.query;
 
-        const {
-            rows: [{ count }],
+        p = Number(p);
+        r = r ? Number(r) : 20;
+
+        let {
+            rows: [{ results }],
         } = await pool.query(
             `SELECT 
-                COUNT(*) AS count
+                COUNT(*) AS results
             FROM messages 
             WHERE to_user=$1
             `,
             [authId]
         );
 
+        results = Number(results);
+
         const { rows: messages }: QueryResult<IMessage> = await pool.query(
             messageQuery(
-                p
-                    ? `WHERE m.message_order < ${
-                          Number(Number(p) === 1 ? count + 1 : count) /
-                          Number(p)
-                      } AND to_user=$1`
-                    : `WHERE m.to_user=$1`,
+                `WHERE m.to_user=$1`,
                 "",
-                `LIMIT ${r}`
+                r ? `LIMIT ${r}` : "",
+                `OFFSET ${sum(p, r)}`
             ),
             [authId]
         );
 
-        return res.status(200).json({ count, messages });
+        return res.status(200).json({ results, messages });
     } catch (err) {
         return next(err);
     }

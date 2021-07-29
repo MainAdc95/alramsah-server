@@ -2,6 +2,7 @@ import express from "express";
 import cors, { CorsOptions } from "cors";
 import cookieParser from "cookie-parser";
 import rssParser from "rss-parser";
+import axios from "axios";
 
 // handlers
 import errorHandler from "./handlers/error";
@@ -63,11 +64,13 @@ app.use("/api", newsLetterRoutes);
 
 let parser = new rssParser();
 
-app.get("/api/rss/:url(*)", async (req, res, next) => {
+app.post("/api/rss", async (req, res, next) => {
     try {
-        const { url } = req.params;
+        const { url } = req.body;
 
-        let feed = await parser.parseURL(url);
+        const data = await axios.get(url);
+
+        const feed = await parser.parseString(data.data);
 
         return res.status(200).json(feed);
     } catch (err) {

@@ -39,7 +39,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteTag = exports.editTag = exports.addTag = exports.getTags = exports.getTag = void 0;
 var db_1 = require("../utils/db");
 var uuid_1 = require("uuid");
-var query = function (filter, order, limit) { return "\n            SELECT\n                t.tag_id,\n                t.tag_name,\n                t.tag_order,\n                t.created_at,\n                t.updated_at,\n                jsonb_build_object (\n                    'user_id', cb.user_id,\n                    'username', cb.username\n                ) as created_by,\n                jsonb_build_object (\n                    'user_id', ub.user_id,\n                    'username', ub.username\n                ) as updated_by\n            FROM tags t\n                LEFT JOIN users cb ON cb.user_id=t.created_by\n                LEFT JOIN users ub ON ub.user_id=t.updated_by\n            " + (filter || "") + "\n            GROUP BY t.tag_id, cb.user_id, ub.user_id\n            " + (order || "ORDER BY t.created_at desc") + "\n            " + (limit || "LIMIT 100") + "\n        "; };
+var query = function (filter, order, limit, offset) { return "\n            SELECT\n                t.tag_id,\n                t.tag_name,\n                t.tag_order,\n                t.created_at,\n                t.updated_at,\n                jsonb_build_object (\n                    'user_id', cb.user_id,\n                    'username', cb.username\n                ) as created_by,\n                jsonb_build_object (\n                    'user_id', ub.user_id,\n                    'username', ub.username\n                ) as updated_by\n            FROM tags t\n                LEFT JOIN users cb ON cb.user_id=t.created_by\n                LEFT JOIN users ub ON ub.user_id=t.updated_by\n            " + (filter || "") + "\n            GROUP BY t.tag_id, cb.user_id, ub.user_id\n            " + (order || "ORDER BY t.created_at desc") + "\n            " + (limit || "") + "\n            " + (offset || "") + "\n        "; };
 function getTag(req, res, next) {
     return __awaiter(this, void 0, void 0, function () {
         var tagId, tag, err_1;
@@ -63,6 +63,13 @@ function getTag(req, res, next) {
     });
 }
 exports.getTag = getTag;
+var sum = function (times, value) {
+    var totalValue = 0;
+    for (var i = 0; i < times; i++) {
+        totalValue += value;
+    }
+    return totalValue - value;
+};
 function getTags(req, res, next) {
     return __awaiter(this, void 0, void 0, function () {
         var _a, p, r, count, tags_1, tags, err_2;
@@ -71,14 +78,13 @@ function getTags(req, res, next) {
                 case 0:
                     _b.trys.push([0, 5, , 6]);
                     _a = req.query, p = _a.p, r = _a.r;
-                    if (!(p || r)) return [3 /*break*/, 3];
+                    p = Number(p);
+                    r = r ? Number(r) : 20;
+                    if (!(p && r)) return [3 /*break*/, 3];
                     return [4 /*yield*/, db_1.pool.query("SELECT count(*) FROM tags")];
                 case 1:
                     count = (_b.sent()).rows[0].count;
-                    return [4 /*yield*/, db_1.pool.query(query(p
-                            ? "WHERE tag_order < " + Number(Number(p) === 1 ? count + 1 : count) /
-                                Number(p)
-                            : "", "", "LIMIT " + r))];
+                    return [4 /*yield*/, db_1.pool.query(query("", "", r ? "LIMIT " + r : "", "OFFSET " + sum(p, r)))];
                 case 2:
                     tags_1 = (_b.sent()).rows;
                     return [2 /*return*/, res.status(200).json({
@@ -100,11 +106,11 @@ function getTags(req, res, next) {
 exports.getTags = getTags;
 function addTag(req, res, next) {
     return __awaiter(this, void 0, void 0, function () {
-        var authId, tag_name, errors, _i, _a, v, tagId, date, err_3;
+        var authId, tag_name, errors, _i, _a, v, tagId, date, tag, err_3;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
-                    _b.trys.push([0, 2, , 3]);
+                    _b.trys.push([0, 3, , 4]);
                     authId = req.query.authId;
                     tag_name = req.body.tag_name;
                     tag_name = String(tag_name).trim();
@@ -128,13 +134,14 @@ function addTag(req, res, next) {
                 case 1:
                     // __________________________ add tag
                     _b.sent();
-                    return [2 /*return*/, res
-                            .status(200)
-                            .json({ message: "You have succesfully added a tag." })];
+                    return [4 /*yield*/, db_1.pool.query(query("WHERE t.tag_id=$1", "", ""), [tagId])];
                 case 2:
+                    tag = (_b.sent()).rows[0];
+                    return [2 /*return*/, res.status(200).json(tag)];
+                case 3:
                     err_3 = _b.sent();
                     return [2 /*return*/, next(err_3)];
-                case 3: return [2 /*return*/];
+                case 4: return [2 /*return*/];
             }
         });
     });

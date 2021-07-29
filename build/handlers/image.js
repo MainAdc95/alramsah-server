@@ -91,7 +91,7 @@ function addImages(req, res, next) {
                     file = void 0;
                     if (!(size === "l")) return [3 /*break*/, 4];
                     return [4 /*yield*/, sharp_1.default(buffer)[format]({
-                            quality: 85,
+                            quality: 80,
                             mozjpeg: format === "jpeg",
                         })];
                 case 3:
@@ -106,7 +106,7 @@ function addImages(req, res, next) {
                             ? Math.ceil(width / 2)
                             : Math.ceil(width / 2 / 2),
                     })[format]({
-                        quality: 85,
+                        quality: 80,
                         mozjpeg: format === "jpeg",
                     })];
                 case 5:
@@ -213,21 +213,38 @@ function deleteImage(req, res, next) {
     });
 }
 exports.deleteImage = deleteImage;
+var sum = function (times, value) {
+    var totalValue = 0;
+    for (var i = 0; i < times; i++) {
+        totalValue += value;
+    }
+    return totalValue - value;
+};
 function getImages(req, res, next) {
     return __awaiter(this, void 0, void 0, function () {
-        var images, err_4;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var _a, p, r, date, search, results, images, err_4;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
-                    _a.trys.push([0, 2, , 3]);
-                    return [4 /*yield*/, db_1.pool.query("\n            SELECT\n                i.image_id,\n                i.sizes,\n                i.image_description,\n                i.created_at\n            FROM images i\n                LEFT JOIN users u ON u.user_id=i.created_by\n            ")];
+                    _b.trys.push([0, 3, , 4]);
+                    _a = req.query, p = _a.p, r = _a.r, date = _a.date, search = _a.search;
+                    p = Number(p);
+                    r = r ? Number(r) : 20;
+                    return [4 /*yield*/, db_1.pool.query("\n            SELECT \n                COUNT(*) as results \n            FROM images\n            " + (search ? "WHERE image_description LIKE '%" + search + "%'" : "") + "\n            ")];
                 case 1:
-                    images = (_a.sent()).rows;
-                    return [2 /*return*/, res.status(200).json(images)];
+                    results = (_b.sent()).rows[0].results;
+                    results = Number(results);
+                    return [4 /*yield*/, db_1.pool.query("\n            SELECT\n                i.image_id,\n                i.sizes,\n                i.image_description,\n                i.created_at\n            FROM images i\n                LEFT JOIN users u ON u.user_id=i.created_by\n            " + (search ? "WHERE image_description LIKE '%" + search + "%'" : "") + "\n            ORDER BY created_at " + (date === "desc" ? "desc" : "asc") + "\n            " + (r ? "LIMIT " + r : "") + "\n            OFFSET " + sum(p, r) + "\n            ")];
                 case 2:
-                    err_4 = _a.sent();
+                    images = (_b.sent()).rows;
+                    return [2 /*return*/, res.status(200).json({
+                            results: results,
+                            images: images,
+                        })];
+                case 3:
+                    err_4 = _b.sent();
                     return [2 /*return*/, next(err_4)];
-                case 3: return [2 /*return*/];
+                case 4: return [2 /*return*/];
             }
         });
     });

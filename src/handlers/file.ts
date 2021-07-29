@@ -32,7 +32,7 @@ const fileQuery = (
     ${filter || ""}
     GROUP BY f.file_id, cb.user_id, ub.user_id, i.image_id
     ${order || "ORDER BY f.created_at desc"}
-    ${limit || "LIMIT 100"}
+    ${limit || ""}
     ${offset || ""}
 `;
 
@@ -52,19 +52,41 @@ export async function getFile(req: Request, res: Response, next: NextFunction) {
     }
 }
 
+const sum = (times: number, value: number) => {
+    let totalValue = 0;
+
+    for (let i = 0; i < times; i++) {
+        totalValue += value;
+    }
+
+    return totalValue - value;
+};
+
 export async function getFiles(
     req: Request,
     res: Response,
     next: NextFunction
 ) {
     try {
-        try {
-            const { rows: files } = await pool.query(fileQuery("", "", "", ""));
+        let { p, r }: any = req.query;
 
-            return res.status(200).json(files);
-        } catch (err) {
-            return next(err);
-        }
+        p = Number(p);
+        r = r ? Number(r) : 20;
+
+        let {
+            rows: [{ results }],
+        } = await pool.query(`SELECT count(*) as results FROM files`);
+
+        results = Number(results);
+
+        const { rows: files } = await pool.query(
+            fileQuery("", "", r ? `LIMIT ${r}` : "", `OFFSET ${sum(p, r)}`)
+        );
+
+        return res.status(200).json({
+            results,
+            files,
+        });
     } catch (err) {
         return next(err);
     }

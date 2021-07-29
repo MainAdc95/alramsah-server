@@ -9,6 +9,7 @@ import {
     archiveNews,
     homeInfo,
     read,
+    transformToArticle,
 } from "../handlers/news";
 import { isLoggedIn } from "../middlewares/auth";
 import { isAdmin, isEditor, checkRole } from "../middlewares/roles";
@@ -46,6 +47,13 @@ router.put(
             "is_admin_assistant",
         ]),
     publishNews
+);
+
+router.post(
+    "/news/:newsId/transform_article",
+    isLoggedIn,
+    isAdmin,
+    transformToArticle
 );
 
 router.put("/news/:newsId", isLoggedIn, isEditor, editNews);

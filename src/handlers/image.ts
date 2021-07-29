@@ -51,14 +51,7 @@ export async function addImages(
                     } else {
                         file = await sharp(buffer)
                             .resize({
-                                height:
-                                    size === "m"
-                                        ? Math.ceil(height / 2)
-                                        : Math.ceil(height / 2 / 2),
-                                width:
-                                    size === "m"
-                                        ? Math.ceil(width / 2)
-                                        : Math.ceil(width / 2 / 2),
+                                width: size === "m" ? 600 : 300,
                             })
                             [format]({
                                 quality: 80,

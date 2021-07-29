@@ -63,7 +63,7 @@ function addUserImages(req, res, next) {
                     format = img.mimetype === "image/png" || img.mimetype === "image/svg"
                         ? "png"
                         : "jpeg";
-                    return [4 /*yield*/, sharp_1.default(img.buffer)[format]({ quality: 85 })];
+                    return [4 /*yield*/, sharp_1.default(img.buffer)[format]({ quality: 80 })];
                 case 2:
                     file = _b.sent();
                     imgParams = {
@@ -148,7 +148,7 @@ function getUserImages(req, res, next) {
                 case 0:
                     _a.trys.push([0, 2, , 3]);
                     authId = req.query.authId;
-                    return [4 /*yield*/, db_1.pool.query("\n            SELECT\n                image_id,\n                image_name,\n                ui.created_at\n            FROM user_images ui\n                LEFT JOIN users u ON u.user_id=ui.user_id\n            WHERE ui.user_id=$1\n            ", [authId])];
+                    return [4 /*yield*/, db_1.pool.query("\n            SELECT\n                image_id,\n                sizes,\n                ui.created_at\n            FROM user_images ui\n                LEFT JOIN users u ON u.user_id=ui.user_id\n            WHERE ui.user_id=$1\n            ", [authId])];
                 case 1:
                     images = (_a.sent()).rows;
                     return [2 /*return*/, res.status(200).json(images)];

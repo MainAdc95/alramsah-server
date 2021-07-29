@@ -43,7 +43,7 @@ exports.publishArticle = exports.archiveArticle = exports.permanentlyDeleteArtic
 var db_1 = require("../utils/db");
 var uuid_1 = require("uuid");
 var pg_format_1 = __importDefault(require("pg-format"));
-var articleQuery = function (filter, order, limit, offset) { return "\n            SELECT\n                a.article_id,\n                a.intro,\n                a.title,\n                a.text,\n                a.sub_titles,\n                a.is_archived,\n                a.updated_at,\n                a.created_at,\n                a.is_published,\n                jsonb_build_object (\n                    'user_id', cb.user_id,\n                    'username', cb.username\n                ) as created_by,\n                jsonb_build_object (\n                    'user_id', ub.user_id,\n                    'username', ub.username\n                ) as updated_by,\n                CASE WHEN COUNT(t)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(DISTINCT t.tag) END as tags,\n                CASE WHEN COUNT(i)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(DISTINCT i.image) END as images,\n                CASE WHEN COUNT(s)=0 THEN null ELSE jsonb_build_object (\n                    'section_id', s.section_id,\n                    'section_name', s.section_name,\n                    'color', s.color\n                ) END as section,\n                CASE WHEN COUNT(tn)=0 THEN null ELSE jsonb_build_object (\n                    'image_id', tn.image_id,\n                    'sizes', tn.sizes\n                ) END as thumbnail\n            FROM articles a\n                LEFT JOIN users cb ON cb.user_id=a.created_by\n                LEFT JOIN users ub ON ub.user_id=a.updated_by\n                LEFT JOIN sections s ON s.section_id=a.section\n                LEFT JOIN images tn ON tn.image_id=a.thumbnail\n                LEFT JOIN (\n                    SELECT\n                        nt.article_id,\n                        jsonb_build_object (\n                            'tag_id', t.tag_id,\n                            'tag_name', t.tag_name\n                        ) as tag\n                    FROM article_tag nt\n                        LEFT JOIN tags t ON t.tag_id=nt.tag_id\n                ) as t\n                    ON t.article_id=a.article_id\n                LEFT JOIN (\n                    SELECT\n                        ni.article_id,\n                        jsonb_build_object (\n                            'image_id', i.image_id,\n                            'sizes', i.sizes\n                        ) as image\n                    FROM article_image ni\n                        LEFT JOIN images i ON i.image_id=ni.image_id\n                ) as i\n                    ON i.article_id=a.article_id\n            " + (filter || "") + "\n            GROUP BY a.article_id, cb.user_id, ub.user_id, s.section_id, tn.image_id\n            " + (order || "ORDER BY a.created_at desc") + "\n            " + (limit || "LIMIT 100") + "\n            " + (offset || "") + "\n        "; };
+var articleQuery = function (filter, order, limit, offset) { return "\n            SELECT\n                a.article_id,\n                a.intro,\n                a.title,\n                a.text,\n                a.readers,\n                a.sub_titles,\n                a.is_archived,\n                a.updated_at,\n                a.created_at,\n                a.is_published,\n                jsonb_build_object (\n                    'user_id', cb.user_id,\n                    'username', cb.username,\n                    'avatar', cb.avatar\n                ) as created_by,\n                jsonb_build_object (\n                    'user_id', ub.user_id,\n                    'username', ub.username\n                ) as updated_by,\n                CASE WHEN COUNT(t)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(DISTINCT t.tag) END as tags,\n                CASE WHEN COUNT(i)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(DISTINCT i.image) END as images,\n                CASE WHEN COUNT(tn)=0 THEN null ELSE jsonb_build_object (\n                    'image_id', tn.image_id,\n                    'sizes', tn.sizes\n                ) END as thumbnail\n            FROM articles a\n                LEFT JOIN users ub ON ub.user_id=a.updated_by\n                LEFT JOIN images tn ON tn.image_id=a.thumbnail\n                LEFT JOIN (\n                    SELECT\n                        u.user_id,\n                        u.username,\n                        jsonb_build_object (\n                            'image_id', ui.image_id,\n                            'sizes', ui.sizes\n                        ) as avatar\n                    FROM users u\n                        LEFT JOIN user_images ui ON ui.image_id=u.avatar\n                ) as cb\n                    ON cb.user_id=a.created_by\n                LEFT JOIN (\n                    SELECT\n                        nt.article_id,\n                        jsonb_build_object (\n                            'tag_id', t.tag_id,\n                            'tag_name', t.tag_name\n                        ) as tag\n                    FROM article_tag nt\n                        LEFT JOIN tags t ON t.tag_id=nt.tag_id\n                ) as t\n                    ON t.article_id=a.article_id\n                LEFT JOIN (\n                    SELECT\n                        ni.article_id,\n                        jsonb_build_object (\n                            'image_id', i.image_id,\n                            'sizes', i.sizes\n                        ) as image\n                    FROM article_image ni\n                        LEFT JOIN images i ON i.image_id=ni.image_id\n                ) as i\n                    ON i.article_id=a.article_id\n            " + (filter || "") + "\n            GROUP BY a.article_id, cb.user_id, cb.username, cb.avatar, ub.user_id, tn.image_id\n            " + (order || "ORDER BY a.created_at desc") + "\n            " + (limit || "LIMIT 100") + "\n            " + (offset || "") + "\n        "; };
 function getArticle(req, res, next) {
     return __awaiter(this, void 0, void 0, function () {
         var articleId, article, err_1;
@@ -74,22 +74,22 @@ var sum = function (times, value) {
 };
 function getArticles(req, res, next) {
     return __awaiter(this, void 0, void 0, function () {
-        var _a, p, r, type, sectionId, tag, count, articles, err_2;
+        var _a, p, r, type, tag, count, articles, err_2;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
                     _b.trys.push([0, 3, , 4]);
-                    _a = req.query, p = _a.p, r = _a.r, type = _a.type, sectionId = _a.sectionId, tag = _a.tag;
+                    _a = req.query, p = _a.p, r = _a.r, type = _a.type, tag = _a.tag;
                     p = Number(p);
                     r = r ? Number(r) : 20;
-                    return [4 /*yield*/, db_1.pool.query("SELECT count(*) FROM articles n WHERE \n            " + (tag
+                    return [4 /*yield*/, db_1.pool.query("SELECT count(*) FROM articles a WHERE \n            " + (tag
                             ? "a.article_id IN (select article_id from article_tag WHERE tag_id='" + tag + "') AND"
-                            : "") + "\n            is_published=" + (type === "published" ? true : false) + " AND\n            is_archived=" + (type === "archived" ? true : false) + "\n            " + (sectionId ? "AND section='" + sectionId + "'" : ""))];
+                            : "") + "\n            is_published=" + (type === "published" ? true : false) + " AND\n            is_archived=" + (type === "archived" ? true : false))];
                 case 1:
                     count = (_b.sent()).rows[0].count;
                     count = Number(count);
                     return [4 /*yield*/, db_1.pool.query(articleQuery(p
-                            ? "WHERE\n                    " + (sectionId ? "a.section='" + sectionId + "' AND" : "") + "\n                    " + (tag
+                            ? "WHERE\n                    " + (tag
                                 ? "a.article_id IN (select article_id from article_tag WHERE tag_id='" + tag + "') AND"
                                 : "") + "\n                    is_published=" + (type === "published" ? true : false) + " AND\n                    is_archived=" + (type === "archived" ? true : false) + "\n                    "
                             : "", "", r ? "LIMIT " + r : "", "OFFSET " + sum(p, r)))];
@@ -110,53 +110,55 @@ function getArticles(req, res, next) {
 exports.getArticles = getArticles;
 function addArticle(req, res, next) {
     return __awaiter(this, void 0, void 0, function () {
-        var authId, _a, intro, title, text, section, images, tags, subTitles, thumbnail, articleId_1, date, err_3;
+        var authId, _a, intro, title, text, images, tags, subTitles, thumbnail, is_published, articleId_1, date, err_3;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
-                    _b.trys.push([0, 4, , 5]);
+                    _b.trys.push([0, 6, , 7]);
                     authId = req.query.authId;
-                    _a = req.body, intro = _a.intro, title = _a.title, text = _a.text, section = _a.section, images = _a.images, tags = _a.tags, subTitles = _a.subTitles, thumbnail = _a.thumbnail;
+                    _a = req.body, intro = _a.intro, title = _a.title, text = _a.text, images = _a.images, tags = _a.tags, subTitles = _a.subTitles, thumbnail = _a.thumbnail, is_published = _a.is_published;
                     title = String(title).trim();
                     intro = String(intro).trim();
                     text = String(text).trim();
                     articleId_1 = uuid_1.v4();
                     date = new Date();
                     // ______________________________ add article
-                    return [4 /*yield*/, db_1.pool.query("\n            INSERT INTO articles (\n                article_id,\n                thumbnail,\n                intro,\n                title,\n                text,\n                section,\n                sub_titles,\n                created_by,\n                updated_by,\n                created_at,\n                updated_at\n            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)\n        ", [
+                    return [4 /*yield*/, db_1.pool.query("\n            INSERT INTO articles (\n                " + (thumbnail ? "thumbnail, " : "") + "\n                article_id,\n                intro,\n                title,\n                text,\n                sub_titles,\n                created_by,\n                updated_by,\n                created_at,\n                updated_at,\n                is_published\n            ) VALUES (" + (thumbnail ? "'" + thumbnail.image_id + "'," : "") + " $1, $2, $3, $4, $5, $6, $7, $8, $9, $10\n            )\n        ", [
                             articleId_1,
-                            thumbnail.image_id,
                             intro,
                             title,
                             text,
-                            section,
-                            JSON.stringify(subTitles === null || subTitles === void 0 ? void 0 : subTitles.map(function (s) { return ({
-                                sub_title_id: uuid_1.v4(),
-                                sub_title: s.sub_title,
-                            }); })),
+                            JSON.stringify((subTitles === null || subTitles === void 0 ? void 0 : subTitles.length)
+                                ? subTitles === null || subTitles === void 0 ? void 0 : subTitles.map(function (s) { return ({
+                                    sub_title_id: uuid_1.v4(),
+                                    sub_title: s.sub_title,
+                                }); })
+                                : []),
                             authId,
                             authId,
                             date,
                             date,
+                            is_published,
                         ])];
                 case 1:
                     // ______________________________ add article
                     _b.sent();
-                    // ________________________________ images
+                    if (!(images === null || images === void 0 ? void 0 : images.length)) return [3 /*break*/, 3];
                     return [4 /*yield*/, db_1.pool.query(pg_format_1.default("\n                INSERT INTO article_image (\n                    article_id,\n                    image_id\n                ) VALUES %L\n                ", images.map(function (i) { return [articleId_1, i.image_id]; })))];
                 case 2:
-                    // ________________________________ images
                     _b.sent();
-                    // ___________________________ tags
-                    return [4 /*yield*/, db_1.pool.query(pg_format_1.default("\n                INSERT INTO article_tag (\n                    article_id,\n                    tag_id\n                ) VALUES %L\n                ", tags.map(function (t) { return [articleId_1, t.tag_id]; })))];
+                    _b.label = 3;
                 case 3:
-                    // ___________________________ tags
-                    _b.sent();
-                    return [2 /*return*/, res.status(201).json("")];
+                    if (!(tags === null || tags === void 0 ? void 0 : tags.length)) return [3 /*break*/, 5];
+                    return [4 /*yield*/, db_1.pool.query(pg_format_1.default("\n                INSERT INTO article_tag (\n                    article_id,\n                    tag_id\n                ) VALUES %L\n                ", tags.map(function (t) { return [articleId_1, t.tag_id]; })))];
                 case 4:
+                    _b.sent();
+                    _b.label = 5;
+                case 5: return [2 /*return*/, res.status(201).json("")];
+                case 6:
                     err_3 = _b.sent();
                     return [2 /*return*/, next(err_3)];
-                case 5: return [2 /*return*/];
+                case 7: return [2 /*return*/];
             }
         });
     });
@@ -164,37 +166,38 @@ function addArticle(req, res, next) {
 exports.addArticle = addArticle;
 function editArticle(req, res, next) {
     return __awaiter(this, void 0, void 0, function () {
-        var authId, articleId, _a, intro, title, text, section, images, tags, subTitles, thumbnail, date, info, delImgs, addImgs, _loop_1, _i, _b, image, _loop_2, _c, _d, image, delTags, addTags, _loop_3, _e, _f, tag, _loop_4, _g, _h, tag, err_4;
+        var authId, articleId, _a, intro, title, text, images, tags, subTitles, thumbnail, date, info, delImgs, addImgs, _loop_1, _i, _b, image, _loop_2, _c, _d, image, delTags, addTags, _loop_3, _e, _f, tag, _loop_4, _g, _h, tag, err_4;
         return __generator(this, function (_j) {
             switch (_j.label) {
                 case 0:
                     _j.trys.push([0, 11, , 12]);
                     authId = req.query.authId;
                     articleId = req.params.articleId;
-                    _a = req.body, intro = _a.intro, title = _a.title, text = _a.text, section = _a.section, images = _a.images, tags = _a.tags, subTitles = _a.subTitles, thumbnail = _a.thumbnail;
+                    _a = req.body, intro = _a.intro, title = _a.title, text = _a.text, images = _a.images, tags = _a.tags, subTitles = _a.subTitles, thumbnail = _a.thumbnail;
                     title = String(title).trim();
                     intro = String(intro).trim();
                     text = String(text).trim();
                     date = new Date();
                     // ______________________________ edit article
-                    return [4 /*yield*/, db_1.pool.query("\n                UPDATE articles \n                SET\n                    intro=$1,\n                    title=$2,\n                    text=$3,\n                    section=$4,\n                    sub_titles=$5,\n                    updated_by=$6,\n                    updated_at=$7,\n                    thumbnail=$8\n                WHERE article_id=$9\n                ", [
+                    return [4 /*yield*/, db_1.pool.query("\n                UPDATE articles \n                SET\n                    intro=$1,\n                    title=$2,\n                    text=$3,\n                    sub_titles=$4,\n                    updated_by=$5,\n                    updated_at=$6\n                    " + (thumbnail ? ", thumbnail='" + thumbnail.image_id + "'" : "") + "\n                WHERE article_id=$7\n                ", [
                             intro,
                             title,
                             text,
-                            section,
-                            JSON.stringify(subTitles === null || subTitles === void 0 ? void 0 : subTitles.map(function (s) { return ({
-                                sub_title_id: uuid_1.v4(),
-                                sub_title: s.sub_title,
-                            }); })),
+                            JSON.stringify((subTitles === null || subTitles === void 0 ? void 0 : subTitles.length)
+                                ? subTitles === null || subTitles === void 0 ? void 0 : subTitles.map(function (s) { return ({
+                                    sub_title_id: uuid_1.v4(),
+                                    sub_title: s.sub_title,
+                                }); })
+                                : []),
                             authId,
                             date,
-                            thumbnail.image_id,
                             articleId,
                         ])];
                 case 1:
                     // ______________________________ edit article
                     _j.sent();
-                    return [4 /*yield*/, db_1.pool.query("\n            SELECT\n                CASE WHEN COUNT(t)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(DISTINCT t.tag) END as tags,\n                CASE WHEN COUNT(i)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(DISTINCT i.image) END as images\n            FROM articles a\n                LEFT JOIN users cb ON cb.user_id=a.created_by\n                LEFT JOIN users ub ON ub.user_id=a.updated_by\n                LEFT JOIN sections s ON s.section_id=a.section\n                LEFT JOIN (\n                    SELECT\n                        nt.article_id,\n                        jsonb_build_object (\n                            'tag_id', t.tag_id,\n                            'tag_name', t.tag_name\n                        ) as tag\n                    FROM article_tag nt\n                        LEFT JOIN tags t ON t.tag_id=nt.tag_id\n                ) as t\n                    ON t.article_id=a.article_id\n                LEFT JOIN (\n                    SELECT\n                        ni.article_id,\n                        jsonb_build_object (\n                            'image_id', i.image_id,\n                            'sizes', i.sizes\n                        ) as image\n                    FROM article_image ni\n                        LEFT JOIN images i ON i.image_id=ni.image_id\n                ) as i\n                    ON i.article_id=a.article_id\n            WHERE a.article_id=$1\n            GROUP BY a.article_id, cb.user_id, ub.user_id, s.section_id\n            ", [articleId])];
+                    if (!((images === null || images === void 0 ? void 0 : images.length) || (tags === null || tags === void 0 ? void 0 : tags.length))) return [3 /*break*/, 10];
+                    return [4 /*yield*/, db_1.pool.query("\n            SELECT\n                CASE WHEN COUNT(t)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(DISTINCT t.tag) END as tags,\n                CASE WHEN COUNT(i)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(DISTINCT i.image) END as images\n            FROM articles a\n                LEFT JOIN users cb ON cb.user_id=a.created_by\n                LEFT JOIN users ub ON ub.user_id=a.updated_by\n                LEFT JOIN (\n                    SELECT\n                        nt.article_id,\n                        jsonb_build_object (\n                            'tag_id', t.tag_id,\n                            'tag_name', t.tag_name\n                        ) as tag\n                    FROM article_tag nt\n                        LEFT JOIN tags t ON t.tag_id=nt.tag_id\n                ) as t\n                    ON t.article_id=a.article_id\n                LEFT JOIN (\n                    SELECT\n                        ni.article_id,\n                        jsonb_build_object (\n                            'image_id', i.image_id,\n                            'sizes', i.sizes\n                        ) as image\n                    FROM article_image ni\n                        LEFT JOIN images i ON i.image_id=ni.image_id\n                ) as i\n                    ON i.article_id=a.article_id\n            WHERE a.article_id=$1\n            GROUP BY a.article_id, cb.user_id, ub.user_id\n            ", [articleId])];
                 case 2:
                     info = (_j.sent()).rows[0];
                     delImgs = [];

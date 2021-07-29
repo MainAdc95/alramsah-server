@@ -100,7 +100,7 @@ function sendMessage(req, res, next) {
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
-                    _b.trys.push([0, 3, , 4]);
+                    _b.trys.push([0, 4, , 5]);
                     authId = req.query.authId;
                     _a = req.body, subject = _a.subject, text = _a.text, to = _a.to, images = _a.images;
                     messageId_1 = uuid_1.v4();
@@ -108,18 +108,18 @@ function sendMessage(req, res, next) {
                     return [4 /*yield*/, db_1.pool.query("\n            INSERT INTO messages (\n                message_id,\n                subject,\n                text,\n                to_user,\n                created_by,\n                created_at\n            ) VALUES ($1, $2, $3, $4, $5, $6)\n            ", [messageId_1, subject, text, to, authId, date])];
                 case 1:
                     _b.sent();
-                    // ____________________________ images
+                    if (!images.length) return [3 /*break*/, 3];
                     return [4 /*yield*/, db_1.pool.query(pg_format_1.default("\n            INSERT INTO message_image (\n                message_id,\n                image_id\n            ) VALUES %L\n            ", images.map(function (img) { return [messageId_1, img.image_id]; })))];
                 case 2:
-                    // ____________________________ images
                     _b.sent();
-                    return [2 /*return*/, res
-                            .status(201)
-                            .json({ message: "You have successfully sent a message." })];
-                case 3:
+                    _b.label = 3;
+                case 3: return [2 /*return*/, res
+                        .status(201)
+                        .json({ message: "You have successfully sent a message." })];
+                case 4:
                     err_3 = _b.sent();
                     return [2 /*return*/, next(err_3)];
-                case 4: return [2 /*return*/];
+                case 5: return [2 /*return*/];
             }
         });
     });
