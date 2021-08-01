@@ -1009,3 +1009,106 @@ export async function homeInfo(
         return next(err);
     }
 }
+
+export async function getStatistics(
+    req: Request,
+    res: Response,
+    next: NextFunction
+) {
+    try {
+        const { rows: sections } = await pool.query(
+            `
+            SELECT
+                s.section_id,
+                s.section_name,
+                s.color,
+                CASE WHEN COUNT(n)=0 THEN ARRAY[]::int[] ELSE array_agg(n.readers) END as news
+            FROM sections s
+                LEFT JOIN (
+                    SELECT
+                        news_id,
+                        section,
+                        readers
+                    FROM news
+                ) n
+                    ON n.section=s.section_id
+            GROUP BY s.section_id
+            `
+        );
+
+        let d = new Date();
+
+        const date = d.setMonth(d.getMonth() - 12);
+
+        const { rows: news } = await pool.query(
+            `
+                SELECT
+                    readers,
+                    created_at
+                FROM news
+                WHERE created_at > $1
+                ORDER BY created_at desc
+            `,
+            [new Date(date)]
+        );
+
+        d = new Date();
+
+        const { rows: newsPerDay } = await pool.query(
+            `
+            SELECT
+                created_at
+            FROM news
+            WHERE created_at > $1
+            ORDER BY created_at desc
+            `,
+            [new Date(d.setDate(d.getDate() - 30))]
+        );
+
+        const { rows: latestNews } = await pool.query(
+            `
+            SELECT
+                n.news_id,
+                n.title,
+                n.readers,
+                is_archived,
+                n.created_at,
+                CASE WHEN COUNT(i)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(DISTINCT i.image) END as images,
+                CASE WHEN COUNT(s)=0 THEN null ELSE jsonb_build_object (
+                    'section_id', s.section_id,
+                    'section_name', s.section_name,
+                    'color', s.color
+                ) END as section,
+                CASE WHEN COUNT(tn)=0 THEN null ELSE jsonb_build_object (
+                    'image_id', tn.image_id,
+                    'sizes', tn.sizes
+                ) END as thumbnail
+            FROM news n
+                LEFT JOIN users cb ON cb.user_id=n.created_by
+                LEFT JOIN users ub ON ub.user_id=n.updated_by
+                LEFT JOIN sections s ON s.section_id=n.section
+                LEFT JOIN images tn ON tn.image_id=n.thumbnail
+                LEFT JOIN (
+                    SELECT
+                        ni.news_id,
+                        jsonb_build_object (
+                            'image_id', i.image_id,
+                            'sizes', i.sizes
+                        ) as image
+                    FROM news_image ni
+                        LEFT JOIN images i ON i.image_id=ni.image_id
+                ) as i
+                    ON i.news_id=n.news_id
+            WHERE n.created_at > $1
+            GROUP BY n.news_id, s.section_id, tn.image_id
+            ORDER BY n.created_at desc, n.readers desc
+            LIMIT 20
+            `,
+            [new Date(d)]
+        );
+
+        return res.status(200).json({ sections, news, newsPerDay, latestNews });
+    } catch (err) {
+        return next(err);
+    }
+}

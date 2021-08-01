@@ -2,7 +2,6 @@ require("dotenv").config();
 
 const port = process.env.PORT || 5000;
 
-// https://www.alramsah.com
 const Config = {
     port,
     isProduction: process.env.NODE_ENV === "production",

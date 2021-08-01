@@ -10,6 +10,7 @@ import {
     homeInfo,
     read,
     transformToArticle,
+    getStatistics,
 } from "../handlers/news";
 import { isLoggedIn } from "../middlewares/auth";
 import { isAdmin, isEditor, checkRole } from "../middlewares/roles";
@@ -21,6 +22,8 @@ router.get("/news/:newsId", getNews);
 router.get("/news", getAllNews);
 
 router.get("/homeInfo", homeInfo);
+
+router.get("/statistics", isLoggedIn, isAdmin, getStatistics);
 
 router.post(
     "/news",

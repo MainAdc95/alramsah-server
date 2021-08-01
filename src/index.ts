@@ -44,6 +44,7 @@ const corsOptions: CorsOptions = {
     },
     credentials: true,
 };
+
 app.use(cors(corsOptions));
 
 // routes

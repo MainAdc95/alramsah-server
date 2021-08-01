@@ -297,7 +297,7 @@ export async function vote(req: Request, res: Response, next: NextFunction) {
     try {
         const { optionId } = req.params;
         const { number } = req.body;
-        console.log(req.body);
+
         await pool.query(
             `UPDATE poll_options SET votes = votes + $1 WHERE option_id=$2`,
             [number, optionId]
