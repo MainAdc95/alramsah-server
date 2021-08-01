@@ -1101,7 +1101,7 @@ export async function getStatistics(
                     ON i.news_id=n.news_id
             WHERE n.created_at > $1
             GROUP BY n.news_id, s.section_id, tn.image_id
-            ORDER BY n.created_at desc, n.readers desc
+            ORDER BY n.readers desc
             LIMIT 20
             `,
             [new Date(d)]
