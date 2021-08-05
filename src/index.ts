@@ -22,6 +22,8 @@ import stripRoutes from "./routes/strip";
 import fileRoutes from "./routes/file";
 import pollRoutes from "./routes/poll";
 import newsLetterRoutes from "./routes/newsLetter";
+import visitorRoutes from "./routes/visitor";
+import { pool } from "./utils/db";
 
 // server setup
 const app = express();
@@ -62,6 +64,7 @@ app.use("/api", stripRoutes);
 app.use("/api", fileRoutes);
 app.use("/api", pollRoutes);
 app.use("/api", newsLetterRoutes);
+app.use("/api", visitorRoutes);
 
 let parser = new rssParser();
 
@@ -78,6 +81,37 @@ app.post("/api/rss", async (req, res, next) => {
         return next(err);
     }
 });
+
+const createReaders = async () => {
+    const { rows: news } = await pool.query(`SELECT * FROM news`);
+    const { rows: articles } = await pool.query(`SELECT * FROM articles`);
+
+    for (let item of news) {
+        const min = 2500;
+        const max = 15000;
+
+        const readers = Math.floor(Math.random() * (max - min + 1)) + min;
+        console.log("DSF");
+        await pool.query(`UPDATE news SET readers=$1 WHERE news_id=$2`, [
+            readers,
+            item.news_id,
+        ]);
+    }
+
+    for (let item of articles) {
+        const min = 1;
+        const max = 15000;
+
+        const readers = Math.floor(Math.random() * (max - min + 1)) + min;
+
+        await pool.query(`UPDATE articles SET readers=$1 WHERE article_id=$2`, [
+            readers,
+            item.article_id,
+        ]);
+    }
+};
+
+createReaders();
 
 // 404 route
 app.use((req, res, next) => {

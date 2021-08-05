@@ -242,6 +242,12 @@ CREATE TABLE IF NOT EXISTS news_letter (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS visitors (
+    visitor_id uuid PRIMARY KEY,
+    user_data JSONB,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- SELECT con.*
 --        FROM pg_catalog.pg_constraint con
 --             INNER JOIN pg_catalog.pg_class rel

@@ -6,6 +6,7 @@ import {
     permanentlyDeleteArticle,
     getArticle,
     publishArticle,
+    read,
     archiveArticle,
 } from "../handlers/article";
 import { isLoggedIn } from "../middlewares/auth";
@@ -42,6 +43,8 @@ router.put(
         ]),
     publishArticle
 );
+
+router.post("/articles/:articleId/read", read);
 
 router.put("/articles/:articleId", isLoggedIn, isAdmin, editArticle);
 

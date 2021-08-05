@@ -322,12 +322,10 @@ export async function editArticle(
 
         // ________________________________ article information
 
-        if (images?.length || tags?.length) {
-            const {
-                rows: [info],
-            }: QueryResult<{ images: IImage[]; tags: ITag[] }> =
-                await pool.query(
-                    `
+        const {
+            rows: [info],
+        }: QueryResult<{ images: IImage[]; tags: ITag[] }> = await pool.query(
+            `
             SELECT
                 CASE WHEN COUNT(t)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(DISTINCT t.tag) END as tags,
                 CASE WHEN COUNT(i)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(DISTINCT i.image) END as images
@@ -359,98 +357,95 @@ export async function editArticle(
             WHERE a.article_id=$1
             GROUP BY a.article_id, cb.user_id, ub.user_id
             `,
-                    [articleId]
-                );
+            [articleId]
+        );
 
-            // ________________________________ images
-            const delImgs: any = [];
-            const addImgs: any = [];
+        // ________________________________ images
+        const delImgs: any = [];
+        const addImgs: any = [];
 
-            // add / delete logic
-            for (let image of images as IImage[]) {
-                const foundImg = info.images.find(
-                    (i) => i.image_id === image.image_id
-                );
+        // add / delete logic
+        for (let image of images as IImage[]) {
+            const foundImg = info.images.find(
+                (i) => i.image_id === image.image_id
+            );
 
-                if (!foundImg) addImgs.push([articleId, image.image_id]);
-            }
+            if (!foundImg) addImgs.push([articleId, image.image_id]);
+        }
 
-            for (let image of info.images) {
-                const foundImg = images.find(
-                    (i: IImage) => i.image_id === image.image_id
-                );
+        for (let image of info.images) {
+            const foundImg = images.find(
+                (i: IImage) => i.image_id === image.image_id
+            );
 
-                if (!foundImg) delImgs.push([articleId, image.image_id]);
-            }
+            if (!foundImg) delImgs.push([articleId, image.image_id]);
+        }
 
-            // add
-            if (addImgs.length)
-                await pool.query(
-                    format(
-                        `
+        // add
+        if (addImgs.length)
+            await pool.query(
+                format(
+                    `
                 INSERT INTO article_image (
                     article_id,
                     image_id
                 ) VALUES %L
                 `,
-                        addImgs
-                    )
-                );
+                    addImgs
+                )
+            );
 
-            // delete
-            if (delImgs.length)
-                await pool.query(
-                    format(
-                        `
+        // delete
+        if (delImgs.length)
+            await pool.query(
+                format(
+                    `
                 DELETE FROM article_image WHERE (article_id, image_id) IN (%L)
                 `,
-                        delImgs
-                    )
-                );
+                    delImgs
+                )
+            );
 
-            // ________________________________ tags
-            const delTags: any = [];
-            const addTags: any = [];
+        // ________________________________ tags
+        const delTags: any = [];
+        const addTags: any = [];
 
-            // add / delete logic
-            for (let tag of tags as ITag[]) {
-                const foundTag = info.tags.find((t) => t.tag_id === tag.tag_id);
+        // add / delete logic
+        for (let tag of tags as ITag[]) {
+            const foundTag = info.tags.find((t) => t.tag_id === tag.tag_id);
 
-                if (!foundTag) addTags.push([articleId, tag.tag_id]);
-            }
+            if (!foundTag) addTags.push([articleId, tag.tag_id]);
+        }
 
-            for (let tag of info.tags) {
-                const foundTag = tags.find(
-                    (i: ITag) => i.tag_id === tag.tag_id
-                );
-                if (!foundTag) delTags.push([articleId, tag.tag_id]);
-            }
+        for (let tag of info.tags) {
+            const foundTag = tags.find((i: ITag) => i.tag_id === tag.tag_id);
+            if (!foundTag) delTags.push([articleId, tag.tag_id]);
+        }
 
-            // add
-            if (addTags.length)
-                await pool.query(
-                    format(
-                        `
+        // add
+        if (addTags.length)
+            await pool.query(
+                format(
+                    `
                 INSERT INTO article_tag (
                     article_id,
                     tag_id
                 ) VALUES %L
                 `,
-                        addTags
-                    )
-                );
+                    addTags
+                )
+            );
 
-            // delete
-            if (delTags.length)
-                await pool.query(
-                    format(
-                        `
+        // delete
+        if (delTags.length)
+            await pool.query(
+                format(
+                    `
                 DELETE FROM article_tag WHERE (article_id, tag_id) IN (%L)
                 `,
-                        delTags
-                    )
-                );
-        }
+                    delTags
+                )
+            );
 
         return res.status(200).json("");
     } catch (err) {
@@ -521,6 +516,28 @@ export async function publishArticle(
         return res
             .status(200)
             .json({ message: "You have successfully published a article." });
+    } catch (err) {
+        return next(err);
+    }
+}
+
+export async function read(req: Request, res: Response, next: NextFunction) {
+    try {
+        const { articleId } = req.params;
+
+        const number = Math.ceil(Math.random() * (15 - 5) + 5);
+
+        await pool.query(
+            `
+            UPDATE articles
+            SET
+                readers=readers + $1
+            WHERE article_id=$2
+            `,
+            [number, articleId]
+        );
+
+        return res.status(200).json("");
     } catch (err) {
         return next(err);
     }

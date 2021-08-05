@@ -413,6 +413,7 @@ export async function editNews(
                     ${section ? `, section='${section}'` : ""}
                     ${thumbnail ? `, thumbnail='${thumbnail.image_id}'` : ""}
                     ${file ? `, file='${file}'` : ""}
+                    ${thumbnail ? `, thumbnail='${thumbnail}'` : ""}
                 WHERE news_id=$9
                 `,
             [
@@ -443,12 +444,10 @@ export async function editNews(
         );
 
         // ________________________________ news information
-        if (images?.length || tags?.length) {
-            const {
-                rows: [info],
-            }: QueryResult<{ images: IImage[]; tags: ITag[] }> =
-                await pool.query(
-                    `
+        const {
+            rows: [info],
+        }: QueryResult<{ images: IImage[]; tags: ITag[] }> = await pool.query(
+            `
                 SELECT
                     CASE WHEN COUNT(t)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(DISTINCT t.tag) END as tags,
                     CASE WHEN COUNT(i)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(DISTINCT i.image) END as images
@@ -481,104 +480,95 @@ export async function editNews(
                 WHERE n.news_id=$1
                 GROUP BY n.news_id, cb.user_id, ub.user_id, s.section_id
                 `,
-                    [newsId]
-                );
+            [newsId]
+        );
 
-            // ________________________________ images
-            if (images?.length) {
-                const delImgs: any = [];
-                const addImgs: any = [];
+        // ________________________________ images
+        const delImgs: any = [];
+        const addImgs: any = [];
 
-                // add / delete logic
-                for (let image of images as IImage[]) {
-                    const foundImg = info.images.find(
-                        (i) => i.image_id === image.image_id
-                    );
+        // add / delete logic
+        for (let image of images as IImage[]) {
+            const foundImg = info.images.find(
+                (i) => i.image_id === image.image_id
+            );
 
-                    if (!foundImg) addImgs.push([newsId, image.image_id]);
-                }
+            if (!foundImg) addImgs.push([newsId, image.image_id]);
+        }
 
-                for (let image of info.images) {
-                    const foundImg = images.find(
-                        (i: IImage) => i.image_id === image.image_id
-                    );
+        for (let image of info.images) {
+            const foundImg = images.find(
+                (i: IImage) => i.image_id === image.image_id
+            );
 
-                    if (!foundImg) delImgs.push([newsId, image.image_id]);
-                }
-
-                // add
-                if (addImgs.length)
-                    await pool.query(
-                        format(
-                            `
+            if (!foundImg) delImgs.push([newsId, image.image_id]);
+        }
+        console.log(delImgs, addImgs);
+        // add
+        if (addImgs.length)
+            await pool.query(
+                format(
+                    `
                         INSERT INTO news_image (
                             news_id,
                             image_id
                         ) VALUES %L
                         `,
-                            addImgs
-                        )
-                    );
+                    addImgs
+                )
+            );
 
-                // delete
-                if (delImgs.length)
-                    await pool.query(
-                        format(
-                            `
+        // delete
+        if (delImgs.length)
+            await pool.query(
+                format(
+                    `
                         DELETE FROM news_image WHERE (news_id, image_id) IN (%L)
                         `,
-                            delImgs
-                        )
-                    );
-            }
+                    delImgs
+                )
+            );
 
-            // ________________________________ tags
-            if (tags?.length) {
-                const delTags: any = [];
-                const addTags: any = [];
+        // ________________________________ tags
+        const delTags: any = [];
+        const addTags: any = [];
 
-                // add / delete logic
-                for (let tag of tags as ITag[]) {
-                    const foundTag = info.tags.find(
-                        (t) => t.tag_id === tag.tag_id
-                    );
+        // add / delete logic
+        for (let tag of tags as ITag[]) {
+            const foundTag = info.tags.find((t) => t.tag_id === tag.tag_id);
 
-                    if (!foundTag) addTags.push([newsId, tag.tag_id]);
-                }
+            if (!foundTag) addTags.push([newsId, tag.tag_id]);
+        }
 
-                for (let tag of info.tags) {
-                    const foundTag = tags.find(
-                        (i: ITag) => i.tag_id === tag.tag_id
-                    );
-                    if (!foundTag) delTags.push([newsId, tag.tag_id]);
-                }
+        for (let tag of info.tags) {
+            const foundTag = tags.find((i: ITag) => i.tag_id === tag.tag_id);
+            if (!foundTag) delTags.push([newsId, tag.tag_id]);
+        }
 
-                // add
-                if (addTags.length)
-                    await pool.query(
-                        format(
-                            `
+        // add
+        if (addTags.length)
+            await pool.query(
+                format(
+                    `
                         INSERT INTO news_tag (
                             news_id,
                             tag_id
                         ) VALUES %L
                         `,
-                            addTags
-                        )
-                    );
+                    addTags
+                )
+            );
 
-                // delete
-                if (delTags.length)
-                    await pool.query(
-                        format(
-                            `
+        // delete
+        if (delTags.length)
+            await pool.query(
+                format(
+                    `
                         DELETE FROM news_tag WHERE (news_id, tag_id) IN (%L)
                         `,
-                            delTags
-                        )
-                    );
-            }
-        }
+                    delTags
+                )
+            );
 
         return res.status(200).json("");
     } catch (err) {
@@ -1016,29 +1006,54 @@ export async function getStatistics(
     next: NextFunction
 ) {
     try {
+        const { dataType } = req.query;
+
+        let d = new Date();
+
+        let date: any;
+
+        switch (dataType) {
+            case "days":
+                date = d.setDate(d.getDay() - 7);
+                break;
+            case "weeks":
+                date = d.setDate(d.getDay() - 30);
+                break;
+            case "months":
+                date = d.setMonth(d.getMonth() - 12);
+                break;
+            case "years":
+                date = d.setMonth(d.getMonth() - 12 * 3);
+                break;
+        }
+
         const { rows: sections } = await pool.query(
             `
             SELECT
                 s.section_id,
                 s.section_name,
                 s.color,
-                CASE WHEN COUNT(n)=0 THEN ARRAY[]::int[] ELSE array_agg(n.readers) END as news
+                CASE WHEN COUNT(n)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(
+                    jsonb_build_object (
+                        'readers', n.readers,
+                        'created_at', n.created_at
+                    )
+                ) END as news
             FROM sections s
                 LEFT JOIN (
                     SELECT
                         news_id,
                         section,
-                        readers
+                        readers,
+                        created_at
                     FROM news
+                    WHERE created_at > $1
                 ) n
                     ON n.section=s.section_id
             GROUP BY s.section_id
-            `
+            `,
+            [new Date(date)]
         );
-
-        let d = new Date();
-
-        const date = d.setMonth(d.getMonth() - 12);
 
         const { rows: news } = await pool.query(
             `
@@ -1052,7 +1067,18 @@ export async function getStatistics(
             [new Date(date)]
         );
 
-        d = new Date();
+        const { rows: visitors } = await pool.query(
+            `
+                SELECT
+                    visitor_id,
+                    user_data,
+                    created_at
+                FROM visitors
+                WHERE created_at > $1
+                ORDER BY created_at desc
+            `,
+            [new Date(date)]
+        );
 
         const { rows: newsPerDay } = await pool.query(
             `
@@ -1062,7 +1088,7 @@ export async function getStatistics(
             WHERE created_at > $1
             ORDER BY created_at desc
             `,
-            [new Date(d.setDate(d.getDate() - 30))]
+            [new Date(date)]
         );
 
         const { rows: latestNews } = await pool.query(
@@ -1104,10 +1130,12 @@ export async function getStatistics(
             ORDER BY n.readers desc
             LIMIT 20
             `,
-            [new Date(d)]
+            [new Date(date)]
         );
 
-        return res.status(200).json({ sections, news, newsPerDay, latestNews });
+        return res
+            .status(200)
+            .json({ sections, news, newsPerDay, latestNews, visitors });
     } catch (err) {
         return next(err);
     }
