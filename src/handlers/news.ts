@@ -411,9 +411,12 @@ export async function editNews(
                     resources=$7,
                     thumbnail_description=$8
                     ${section ? `, section='${section}'` : ""}
-                    ${thumbnail ? `, thumbnail='${thumbnail.image_id}'` : ""}
+                    ${
+                        thumbnail
+                            ? `, thumbnail='${thumbnail.image_id}'`
+                            : `, thumbnail=null`
+                    }
                     ${file ? `, file='${file}'` : ""}
-                    ${thumbnail ? `, thumbnail='${thumbnail.image_id}'` : ""}
                 WHERE news_id=$9
                 `,
             [
@@ -503,7 +506,7 @@ export async function editNews(
 
             if (!foundImg) delImgs.push([newsId, image.image_id]);
         }
-        console.log(delImgs, addImgs);
+
         // add
         if (addImgs.length)
             await pool.query(
