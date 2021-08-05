@@ -1047,7 +1047,7 @@ export async function getStatistics(
                         readers,
                         created_at
                     FROM news
-                    WHERE created_at > $1
+                    WHERE is_published AND created_at > $1
                 ) n
                     ON n.section=s.section_id
             GROUP BY s.section_id
@@ -1061,7 +1061,7 @@ export async function getStatistics(
                     readers,
                     created_at
                 FROM news
-                WHERE created_at > $1
+                WHERE is_published AND created_at > $1
                 ORDER BY created_at desc
             `,
             [new Date(date)]
@@ -1085,10 +1085,24 @@ export async function getStatistics(
             SELECT
                 created_at
             FROM news
-            WHERE created_at > $1
+            WHERE is_published AND created_at > $1
             ORDER BY created_at desc
             `,
             [new Date(date)]
+        );
+
+        const trtD = new Date();
+        const trtDate = new Date(trtD.setDate(trtD.getDate() - 5));
+
+        const { rows: trtNews } = await pool.query(
+            `
+            SELECT
+                readers
+            FROM news
+            WHERE is_published AND created_at > $1
+            ORDER BY created_at desc
+            `,
+            [trtDate]
         );
 
         const { rows: latestNews } = await pool.query(
@@ -1133,9 +1147,14 @@ export async function getStatistics(
             [new Date(date)]
         );
 
-        return res
-            .status(200)
-            .json({ sections, news, newsPerDay, latestNews, visitors });
+        return res.status(200).json({
+            sections,
+            news,
+            newsPerDay,
+            latestNews,
+            visitors,
+            trtNews,
+        });
     } catch (err) {
         return next(err);
     }
