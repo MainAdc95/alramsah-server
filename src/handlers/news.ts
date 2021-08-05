@@ -917,20 +917,20 @@ export async function homeInfo(
             `
         );
 
-        // const { rows: files } = await pool.query(
-        //     `
-        //     SELECT
-        //         f.file_id,
-        //         f.text,
-        //         f.created_at,
-        //         jsonb_build_object (
-        //             'image_id', i.image_id,
-        //             'sizes', i.sizes
-        //         ) as image
-        //     FROM files f
-        //         LEFT JOIN images i ON i.image_id=f.image_id
-        //     `
-        // );
+        const { rows: files } = await pool.query(
+            `
+            SELECT
+                f.file_id,
+                f.text,
+                f.created_at,
+                jsonb_build_object (
+                    'image_id', i.image_id,
+                    'sizes', i.sizes
+                ) as image
+            FROM files f
+                LEFT JOIN images i ON i.image_id=f.image_id
+            `
+        );
 
         const { rows: tmrNews } = await pool.query(
             newsQuery(
@@ -994,7 +994,7 @@ export async function homeInfo(
 
         return res
             .status(200)
-            .json({ sections, strips, files: [], tmrNews, article });
+            .json({ sections, strips, files, tmrNews, article });
     } catch (err) {
         return next(err);
     }

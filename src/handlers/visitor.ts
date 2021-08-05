@@ -9,13 +9,16 @@ export async function addVisitor(
     next: NextFunction
 ) {
     try {
-        //92.99.115.26" ||
-        let userData: any = geoip.lookup(req.ip);
+        let userData: any = geoip.lookup(String(req.headers["x-real-ip"]));
 
         if (!userData)
             return next({ status: 500, message: "Invalid ip address." });
 
-        userData = { ...userData, ip: req.ip, browser: req.get("user-agent") };
+        userData = {
+            ...userData,
+            ip: String(req.headers["x-real-ip"]),
+            browser: req.get("user-agent"),
+        };
 
         const visitorId = uuid();
         const date = new Date();
