@@ -413,7 +413,7 @@ export async function editNews(
                     ${section ? `, section='${section}'` : ""}
                     ${thumbnail ? `, thumbnail='${thumbnail.image_id}'` : ""}
                     ${file ? `, file='${file}'` : ""}
-                    ${thumbnail ? `, thumbnail='${thumbnail}'` : ""}
+                    ${thumbnail ? `, thumbnail='${thumbnail.image_id}'` : ""}
                 WHERE news_id=$9
                 `,
             [
@@ -1086,7 +1086,7 @@ export async function getStatistics(
                 created_at
             FROM news
             WHERE is_published AND created_at > $1
-            ORDER BY created_at desc
+            ORDER BY created_at desc 
             `,
             [new Date(date)]
         );
