@@ -145,6 +145,7 @@ CREATE TABLE IF NOT EXISTS news (
     readers INT DEFAULT 0,
     thumbnail_description TEXT,
     file uuid REFERENCES files(file_id) ON DELETE NO ACTION ON UPDATE CASCADE,
+    published_at TIMESTAMPTZ,
     is_published BOOLEAN DEFAULT FALSE,
     is_archived BOOLEAN DEFAULT FALSE,
     created_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
@@ -152,6 +153,8 @@ CREATE TABLE IF NOT EXISTS news (
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- ALTER TABLE news ADD published_at TIMESTAMPTZ;
 
 -- alter table news add thumbnail_description TEXT;
 

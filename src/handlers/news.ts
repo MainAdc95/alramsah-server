@@ -812,10 +812,11 @@ export async function publishNews(
             UPDATE news
             SET
                 is_published=true,
-                is_archived=false
-            WHERE news_id=$1
+                is_archived=false,
+                published_at=$1
+            WHERE news_id=$2
             `,
-            [newsId]
+            [new Date(), newsId]
         );
 
         return res
@@ -1070,18 +1071,18 @@ export async function getStatistics(
             [new Date(date)]
         );
 
-        const { rows: visitors } = await pool.query(
-            `
-                SELECT
-                    visitor_id,
-                    user_data,
-                    created_at
-                FROM visitors
-                WHERE created_at > $1
-                ORDER BY created_at desc
-            `,
-            [new Date(date)]
-        );
+        // const { rows: visitors } = await pool.query(
+        //     `
+        //         SELECT
+        //             visitor_id,
+        //             user_data,
+        //             created_at
+        //         FROM visitors
+        //         WHERE created_at > $1
+        //         ORDER BY created_at desc
+        //     `,
+        //     [new Date(date)]
+        // );
 
         const { rows: newsPerDay } = await pool.query(
             `
@@ -1113,41 +1114,32 @@ export async function getStatistics(
             SELECT
                 n.news_id,
                 n.title,
-                n.readers,
-                is_archived,
-                n.created_at,
-                CASE WHEN COUNT(i)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(DISTINCT i.image) END as images,
-                CASE WHEN COUNT(s)=0 THEN null ELSE jsonb_build_object (
-                    'section_id', s.section_id,
-                    'section_name', s.section_name,
-                    'color', s.color
-                ) END as section,
-                CASE WHEN COUNT(tn)=0 THEN null ELSE jsonb_build_object (
-                    'image_id', tn.image_id,
-                    'sizes', tn.sizes
-                ) END as thumbnail
+                n.readers
             FROM news n
-                LEFT JOIN users cb ON cb.user_id=n.created_by
-                LEFT JOIN users ub ON ub.user_id=n.updated_by
-                LEFT JOIN sections s ON s.section_id=n.section
-                LEFT JOIN images tn ON tn.image_id=n.thumbnail
-                LEFT JOIN (
-                    SELECT
-                        ni.news_id,
-                        jsonb_build_object (
-                            'image_id', i.image_id,
-                            'sizes', i.sizes
-                        ) as image
-                    FROM news_image ni
-                        LEFT JOIN images i ON i.image_id=ni.image_id
-                ) as i
-                    ON i.news_id=n.news_id
             WHERE n.created_at > $1
-            GROUP BY n.news_id, s.section_id, tn.image_id
+            GROUP BY n.news_id
             ORDER BY n.readers desc
-            LIMIT 20
+            LIMIT 10
             `,
             [new Date(date)]
+        );
+
+        const news24d = new Date();
+        const news24date = new Date(news24d.setDate(news24d.getDay() - 1));
+
+        const { rows: news24hr } = await pool.query(
+            `
+            SELECT
+                n.news_id,
+                n.title,
+                n.readers
+            FROM news n
+            WHERE n.created_at > $1
+            GROUP BY n.news_id
+            ORDER BY n.readers desc
+            LIMIT 10
+            `,
+            [news24date]
         );
 
         return res.status(200).json({
@@ -1155,8 +1147,8 @@ export async function getStatistics(
             news,
             newsPerDay,
             latestNews,
-            visitors,
             trtNews,
+            news24hr,
         });
     } catch (err) {
         return next(err);
