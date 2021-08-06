@@ -1071,18 +1071,18 @@ export async function getStatistics(
             [new Date(date)]
         );
 
-        // const { rows: visitors } = await pool.query(
-        //     `
-        //         SELECT
-        //             visitor_id,
-        //             user_data,
-        //             created_at
-        //         FROM visitors
-        //         WHERE created_at > $1
-        //         ORDER BY created_at desc
-        //     `,
-        //     [new Date(date)]
-        // );
+        const { rows: visitors } = await pool.query(
+            `
+                SELECT
+                    visitor_id,
+                    user_data,
+                    created_at
+                FROM visitors
+                WHERE created_at > $1
+                ORDER BY created_at desc
+            `,
+            [new Date(date)]
+        );
 
         const { rows: newsPerDay } = await pool.query(
             `
@@ -1149,6 +1149,7 @@ export async function getStatistics(
             latestNews,
             trtNews,
             news24hr,
+            visitors,
         });
     } catch (err) {
         return next(err);
