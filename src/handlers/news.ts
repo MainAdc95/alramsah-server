@@ -7,6 +7,7 @@ import format from "pg-format";
 import { IImage } from "../models/image";
 import { ITag } from "../models/tag";
 import { ISection } from "../models/section";
+import { runReport } from "../utils/google";
 
 const newsQuery = (
     isAdmin: boolean,
@@ -1071,18 +1072,18 @@ export async function getStatistics(
             [new Date(date)]
         );
 
-        const { rows: visitors } = await pool.query(
-            `
-                SELECT
-                    visitor_id,
-                    user_data,
-                    created_at
-                FROM visitors
-                WHERE created_at > $1
-                ORDER BY created_at desc
-            `,
-            [new Date(date)]
-        );
+        // const { rows: visitors } = await pool.query(
+        //     `
+        //         SELECT
+        //             visitor_id,
+        //             user_data,
+        //             created_at
+        //         FROM visitors
+        //         WHERE created_at > $1
+        //         ORDER BY created_at desc
+        //     `,
+        //     [new Date(date)]
+        // );
 
         const { rows: newsPerDay } = await pool.query(
             `
@@ -1142,6 +1143,8 @@ export async function getStatistics(
             [news24date]
         );
 
+        const { visitedCountries: visitors } = await runReport();
+
         return res.status(200).json({
             sections,
             news,
@@ -1149,7 +1152,7 @@ export async function getStatistics(
             latestNews,
             trtNews,
             news24hr,
-            visitors,
+            visitors: visitors.rows,
         });
     } catch (err) {
         return next(err);

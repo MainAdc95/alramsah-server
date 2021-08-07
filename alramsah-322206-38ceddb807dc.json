@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "alramsah-322206",
+  "private_key_id": "38ceddb807dcde916b47bd754529a7932dea918b",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDUpkbFfO0eJhfq\nMlAZ3enO9hcl8fSV43pid3Wvb7QfAnBqfj8R/ET42IiqW1w+6SVYYdtjBxXa/nz/\nSiFUlrijp5YnvyW0rrjzrywnwzsAdmFU9jBP0wP7hJ4rO+cAWbjf+hXM5dJOMu1g\nV++ejM7Pq4nY/F4FsZ64FwXP5DIr2xGuXLwJtL5JDZE52VQEZUxVWqbJPwlYXhrv\n7tMUdDY0MhNyHbx8Bri+ghlQwAol4vP4zOdJwJrwpQyRQPmItbhB7vcajlQyd3Ks\nTrbRWvPTgzlZu/4MnWydP8nYBEuopXiOndXipo/qE2gJqPv6XFt5sdBg+vlS9pl6\nbdalABOFAgMBAAECggEAI0ILj3CSdzJ9OhtL/TH2c5aJiYTX1ydfsiZY+LTmclLK\n9VlH11FS1Ui/xjE+Nv8crk4RXFa/KK+T5Zcytg4EgLwHcUEn/RCQQXU8tr4P0RiP\ntFDae03DRgd72zLELyJxPQ+/4BiF+WnHwnbqF8mEe9nXEgdsBnkoFiFZGRpeuDb9\nxspjTc7Nj6kfsd0h26s4tq8s7E+blx6nh0fNPcCPmZ36TrlDfrjHDPVPd2ETkFvU\nwzKab8eAMHKl/u8+hfFBp5ERIlNI1qsf7ctz7qQkc+fcctnWFss7ji2mTEmjGZya\nfVbhH/BWgKpAJ88Zc1P4kVqRkqG5u0ZBeIIDdba1eQKBgQDyXLyCE3krvq/7AwYE\nVPUtmEMWp9XkTYJwfUkxUrXKFqf7GrZb1/x2XiJ6thgA06CWgsw9FsGXMB1sIXjw\nDcy06t34XmWoMzXoipT/r1/y49EWLryNCuC4gSU0plsfACKwvHd63IsTdNtdCmgJ\nStN2HmJ9yNiGLMASqRztcQ6CiQKBgQDgnYYY2ETPir56Mlpvhjsn6UkqEotNTLlK\nGqVKLJzrM4MupzJ1WwSRt96lhSncUyasnn+EH9sU7Yyg42FzFe3Pmjd04wiQDpgK\nbNjBUGDoHZZvaYpuJazK+d+XVV3Gop3D5MzNU1XTczpkLdF9QDCjyKgW6ILwjghh\nVCoFeXZ6HQKBgEXB2WQbFMI5hU9bJG00wsjXzV+E+TRX9tZHyTxQERDUio7ktl4j\nAYBUQdpN9QSv5MXNadmfZiMM7zsDO1rkrenYvADTsrDB5J9E2/Pn11cCqViYJR73\nZYzVZw8LXqjCkjmKVV1ggwsblFPoPd+G0OxrfG+10lR0Juh4EmJpKwL5AoGAAygT\nj1vSs7v2a08z2Cdhw3DS12WFUaPHYtQ3CHDSD7gcmtY8rkuGJ+oWlermKLN+cqST\nlC7CbGveMxCe+PgQ7H71Uo4yO5wI5PScozLW+cwYph4slNmwsPWL/9tyQu1cHDml\n6yjFpwASjP/b1s/FHzgdrJy94lWMppmBMayATr0CgYEAvuVb9gjZbphVAOzlosUh\nhuAmKbqCiz+SRy1OipRB42RI90RL78ABym6jodjxH4OGp+/I69udzZpp7SNuevNS\nULZ1qLY8zG+ez8n80sRAN0UsIkUb7bIxx2efBPOwa+t/lrMNlz761YqMICn0Oboy\nLmbVZ3i9qk/JfMkqCvM3kms=\n-----END PRIVATE KEY-----\n",
+  "client_email": "alramsah-ga@alramsah-322206.iam.gserviceaccount.com",
+  "client_id": "102777374238684028421",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/alramsah-ga%40alramsah-322206.iam.gserviceaccount.com"
+}

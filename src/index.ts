@@ -23,7 +23,6 @@ import fileRoutes from "./routes/file";
 import pollRoutes from "./routes/poll";
 import newsLetterRoutes from "./routes/newsLetter";
 import visitorRoutes from "./routes/visitor";
-import { pool } from "./utils/db";
 
 // server setup
 const app = express();
