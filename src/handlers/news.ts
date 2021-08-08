@@ -1077,19 +1077,6 @@ export async function getStatistics(
             [new Date(date)]
         );
 
-        const { rows: alrVisitors } = await pool.query(
-            `
-                SELECT
-                    visitor_id,
-                    user_data,
-                    created_at
-                FROM visitors
-                WHERE created_at > $1
-                ORDER BY created_at desc
-            `,
-            [new Date(date)]
-        );
-
         const { rows: news } = await pool.query(
             `
             SELECT
@@ -1116,6 +1103,18 @@ export async function getStatistics(
             [trtDate]
         );
 
+        const {
+            rows: [{ alrVisitors }],
+        } = await pool.query(
+            `
+                SELECT
+                    count(*) as "alrVisitors"
+                FROM visitors
+                WHERE created_at > $1
+            `,
+            [trtDate]
+        );
+
         const { rows: latestNews } = await pool.query(
             `
             SELECT
@@ -1124,7 +1123,7 @@ export async function getStatistics(
                 COUNT(v) as views
             FROM news n
                 LEFT JOIN views v ON n.news_id=v.news_id
-            WHERE n.created_at > $1
+            WHERE is_published=true AND n.created_at > $1
             GROUP BY n.news_id
             ORDER BY views desc
             LIMIT 10
