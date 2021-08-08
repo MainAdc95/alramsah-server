@@ -830,18 +830,25 @@ export async function publishNews(
 
 export async function read(req: Request, res: Response, next: NextFunction) {
     try {
-        const { newsId } = req.params;
+        const { newsId, articleId, sectionId } = req.body;
 
-        const number = Math.ceil(Math.random() * (15 - 5) + 5);
+        const viewId = uuid();
+        const date = new Date();
+
+        const viewType = newsId ? "news" : "article";
 
         await pool.query(
             `
-            UPDATE news
-            SET
-                readers=readers + $1
-            WHERE news_id=$2
+            INSERT INTO views (
+                view_id,
+                view_type,
+                news_id,
+                article_id,
+                section_id,
+                created_at
+            ) VALUES ($1, $2, $3, $4, $5, $6)
             `,
-            [number, newsId]
+            [viewId, viewType, newsId, articleId, sectionId, date]
         );
 
         return res.status(200).json("");
@@ -1019,10 +1026,10 @@ export async function getStatistics(
 
         switch (dataType) {
             case "days":
-                date = d.setDate(d.getDay() - 7);
+                date = d.setDate(d.getDate() - 7);
                 break;
             case "weeks":
-                date = d.setDate(d.getDay() - 30);
+                date = d.setDate(d.getDate() - 30);
                 break;
             case "months":
                 date = d.setMonth(d.getMonth() - 12);
@@ -1038,74 +1045,73 @@ export async function getStatistics(
                 s.section_id,
                 s.section_name,
                 s.color,
-                CASE WHEN COUNT(n)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(
+                CASE WHEN COUNT(v)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(
                     jsonb_build_object (
-                        'readers', n.readers,
-                        'created_at', n.created_at
+                        'created_at', v.created_at
                     )
-                ) END as news
+                ) END as views
             FROM sections s
                 LEFT JOIN (
                     SELECT
-                        news_id,
-                        section,
-                        readers,
+                        section_id,
                         created_at
-                    FROM news
-                    WHERE is_published AND created_at > $1
-                ) n
-                    ON n.section=s.section_id
+                    FROM views
+                    WHERE created_at > $1
+                ) v
+                    ON v.section_id=s.section_id
             GROUP BY s.section_id
+            ORDER BY s.created_at desc
+
+            `,
+            [new Date(date)]
+        );
+
+        const { rows: views } = await pool.query(
+            `
+                SELECT
+                    created_at
+                FROM views
+                WHERE created_at > $1
+                ORDER BY created_at desc
+            `,
+            [new Date(date)]
+        );
+
+        const { rows: alrVisitors } = await pool.query(
+            `
+                SELECT
+                    visitor_id,
+                    user_data,
+                    created_at
+                FROM visitors
+                WHERE created_at > $1
+                ORDER BY created_at desc
             `,
             [new Date(date)]
         );
 
         const { rows: news } = await pool.query(
             `
-                SELECT
-                    readers,
-                    created_at
-                FROM news
-                WHERE is_published AND created_at > $1
-                ORDER BY created_at desc
-            `,
-            [new Date(date)]
-        );
-
-        // const { rows: visitors } = await pool.query(
-        //     `
-        //         SELECT
-        //             visitor_id,
-        //             user_data,
-        //             created_at
-        //         FROM visitors
-        //         WHERE created_at > $1
-        //         ORDER BY created_at desc
-        //     `,
-        //     [new Date(date)]
-        // );
-
-        const { rows: newsPerDay } = await pool.query(
-            `
             SELECT
                 created_at
             FROM news
-            WHERE is_published AND created_at > $1
-            ORDER BY created_at desc 
+            WHERE is_published AND published_at > $1
+            ORDER BY published_at desc 
             `,
             [new Date(date)]
         );
 
         const trtD = new Date();
-        const trtDate = new Date(trtD.setDate(trtD.getDate() - 5));
+        const trtDate = new Date(trtD.setDate(trtD.getDate() - 1));
 
-        const { rows: trtNews } = await pool.query(
+        const {
+            rows: [{ trtNews }],
+        } = await pool.query(
             `
             SELECT
-                readers
-            FROM news
-            WHERE is_published AND created_at > $1
-            ORDER BY created_at desc
+                count(*) as "trtNews"
+            FROM views
+            WHERE created_at > $1
             `,
             [trtDate]
         );
@@ -1115,11 +1121,12 @@ export async function getStatistics(
             SELECT
                 n.news_id,
                 n.title,
-                n.readers
+                COUNT(v) as views
             FROM news n
+                LEFT JOIN views v ON n.news_id=v.news_id
             WHERE n.created_at > $1
             GROUP BY n.news_id
-            ORDER BY n.readers desc
+            ORDER BY views desc
             LIMIT 10
             `,
             [new Date(date)]
@@ -1133,26 +1140,31 @@ export async function getStatistics(
             SELECT
                 n.news_id,
                 n.title,
-                n.readers
+                COUNT(v) as views
             FROM news n
+                LEFT JOIN views v ON n.news_id=v.news_id
             WHERE n.created_at > $1
             GROUP BY n.news_id
-            ORDER BY n.readers desc
-            LIMIT 10
+            ORDER BY views desc
             `,
             [news24date]
         );
 
-        const { visitedCountries: visitors } = await runReport();
+        const {
+            visitedCountries: visitors,
+            visitedCountriesRealtime: RealTimeVisitors,
+        } = await runReport();
 
         return res.status(200).json({
             sections,
+            views,
             news,
-            newsPerDay,
             latestNews,
             trtNews,
             news24hr,
             visitors: visitors.rows,
+            RealTimeVisitors: RealTimeVisitors.rows,
+            alrVisitors,
         });
     } catch (err) {
         return next(err);

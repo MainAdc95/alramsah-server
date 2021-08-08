@@ -4,6 +4,21 @@ const { BetaAnalyticsDataClient } = require("@google-analytics/data");
 const analyticsDataClient = new BetaAnalyticsDataClient();
 
 export async function runReport() {
+    const [visitedCountriesRealtime] =
+        await analyticsDataClient.runRealtimeReport({
+            property: `properties/${propertyId}`,
+            dimensions: [
+                {
+                    name: "countryId",
+                },
+            ],
+            metrics: [
+                {
+                    name: "activeUsers",
+                },
+            ],
+        });
+
     const [visitedCountries] = await analyticsDataClient.runReport({
         property: `properties/${propertyId}`,
         dateRanges: [
@@ -24,5 +39,5 @@ export async function runReport() {
         ],
     });
 
-    return { visitedCountries };
+    return { visitedCountries, visitedCountriesRealtime };
 }

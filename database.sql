@@ -161,7 +161,7 @@ CREATE TABLE IF NOT EXISTS news (
 -- alter table news drop column readers;
 -- ALTER TABLE news ADD readers INT DEFAULT 0;
 
-ALTER TABLE news ADD resources JSONB;
+-- ALTER TABLE news ADD resources JSONB;
 
 
 -- ALTER TABLE news ALTER column intro TEXT drop not null;
@@ -248,6 +248,15 @@ CREATE TABLE IF NOT EXISTS news_letter (
 CREATE TABLE IF NOT EXISTS visitors (
     visitor_id uuid PRIMARY KEY,
     user_data JSONB,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS views (
+    view_id uuid PRIMARY KEY,
+    view_type VARCHAR(50),
+    section_id uuid REFERENCES sections(section_id) ON DELETE NO ACTION ON UPDATE CASCADE,
+    news_id uuid REFERENCES news(news_id) ON DELETE NO ACTION ON UPDATE CASCADE,
+    article_id uuid REFERENCES articles(article_id) ON DELETE NO ACTION ON UPDATE CASCADE,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

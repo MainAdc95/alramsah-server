@@ -38,7 +38,7 @@ router.post(
     addNews
 );
 
-router.post("/news/:newsId/read", read);
+router.post("/news/read", read);
 
 router.put(
     "/news/publish_news/:newsId",
