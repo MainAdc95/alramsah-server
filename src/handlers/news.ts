@@ -1026,15 +1026,19 @@ export async function getStatistics(
 
         switch (dataType) {
             case "days":
+                d.setHours(0);
                 date = d.setDate(d.getDate() - 7);
                 break;
             case "weeks":
+                d.setHours(0);
                 date = d.setDate(d.getDate() - 30);
                 break;
             case "months":
+                d.setHours(0);
                 date = d.setMonth(d.getMonth() - 12);
                 break;
             case "years":
+                d.setHours(0);
                 date = d.setMonth(d.getMonth() - 12 * 3);
                 break;
         }
@@ -1089,7 +1093,7 @@ export async function getStatistics(
         );
 
         const trtD = new Date();
-        const trtDate = new Date(trtD.setDate(trtD.getDate() - 1));
+        trtD.setHours(0);
 
         const {
             rows: [{ trtNews }],
@@ -1100,19 +1104,19 @@ export async function getStatistics(
             FROM views
             WHERE created_at > $1
             `,
-            [trtDate]
+            [trtD]
         );
 
-        const {
-            rows: [{ alrVisitors }],
-        } = await pool.query(
+        const { rows: alrVisitors } = await pool.query(
             `
                 SELECT
-                    count(*) as "alrVisitors"
+                    visitor_id,
+                    user_data,
+                    created_at
                 FROM visitors
                 WHERE created_at > $1
             `,
-            [trtDate]
+            [trtD]
         );
 
         const { rows: latestNews } = await pool.query(
@@ -1132,7 +1136,7 @@ export async function getStatistics(
         );
 
         const news24d = new Date();
-        const news24date = new Date(news24d.setDate(news24d.getDay() - 1));
+        news24d.setHours(0);
 
         const { rows: news24hr } = await pool.query(
             `
@@ -1146,7 +1150,7 @@ export async function getStatistics(
             GROUP BY n.news_id
             ORDER BY views desc
             `,
-            [news24date]
+            [news24d]
         );
 
         const {
@@ -1166,6 +1170,7 @@ export async function getStatistics(
             alrVisitors,
         });
     } catch (err) {
+        console.log(err);
         return next(err);
     }
 }
