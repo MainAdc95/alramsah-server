@@ -1096,9 +1096,9 @@ export async function getStatistics(
         );
 
         const trtD = new Date();
-        trtD.setHours(0);
-        trtD.setMinutes(0);
         trtD.setSeconds(0);
+        trtD.setMinutes(0);
+        trtD.setHours(0);
         console.log(trtD);
         const {
             rows: [{ trtNews }],
@@ -1109,7 +1109,7 @@ export async function getStatistics(
             FROM views
             WHERE created_at > $1
             `,
-            [new Date("Wed Aug 11 2021 00:00:00 GMT+0400 (Gulf Standard Time)")]
+            [trtD]
         );
 
         const { rows: alrVisitors } = await pool.query(
@@ -1121,7 +1121,7 @@ export async function getStatistics(
                 FROM visitors
                 WHERE created_at > $1
             `,
-            [new Date("Wed Aug 11 2021 00:00:00 GMT+0400 (Gulf Standard Time)")]
+            [trtD]
         );
 
         const { rows: latestNews } = await pool.query(
