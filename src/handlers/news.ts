@@ -1028,8 +1028,9 @@ export async function getStatistics(
 
         switch (dataType) {
             case "days":
-                date = new Date(d.setDate(d.getDate() - 7));
+                date = new Date(d.setDate(d.getDate() - 6));
                 date.setHours(0);
+                date.setMinutes(0);
                 break;
             case "weeks":
                 d.setHours(0);
@@ -1044,7 +1045,7 @@ export async function getStatistics(
                 date = d.setMonth(d.getMonth() - 12 * 3);
                 break;
         }
-        console.log(new Date(), "TEST DATE");
+
         const { rows: sections } = await pool.query(
             `
             SELECT
@@ -1096,6 +1097,8 @@ export async function getStatistics(
 
         const trtD = new Date();
         trtD.setHours(0);
+        trtD.setMinutes(0);
+        trtD.setSeconds(0);
 
         const {
             rows: [{ trtNews }],
@@ -1139,6 +1142,8 @@ export async function getStatistics(
 
         const news24d = new Date();
         news24d.setHours(0);
+        news24d.setMinutes(0);
+        news24d.setSeconds(0);
 
         const { rows: news24hr } = await pool.query(
             `
