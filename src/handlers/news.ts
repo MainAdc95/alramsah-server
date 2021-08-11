@@ -1103,6 +1103,10 @@ export async function getStatistics(
                 today.getDate()
         );
 
+        trtD.setHours(0);
+
+        console.log(trtD, trtD.getHours());
+
         const {
             rows: [{ trtNews }],
         } = await pool.query(
