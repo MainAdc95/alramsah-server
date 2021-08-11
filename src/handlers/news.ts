@@ -1109,7 +1109,7 @@ export async function getStatistics(
             FROM views
             WHERE created_at > $1
             `,
-            [trtD]
+            [new Date("Wed Aug 11 2021 00:00:00 GMT+0400 (Gulf Standard Time)")]
         );
 
         const { rows: alrVisitors } = await pool.query(
@@ -1121,7 +1121,7 @@ export async function getStatistics(
                 FROM visitors
                 WHERE created_at > $1
             `,
-            [trtD]
+            [new Date("Wed Aug 11 2021 00:00:00 GMT+0400 (Gulf Standard Time)")]
         );
 
         const { rows: latestNews } = await pool.query(
