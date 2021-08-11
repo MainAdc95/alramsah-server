@@ -1096,16 +1096,11 @@ export async function getStatistics(
 
         let trtD = new Date();
 
-        // trtD.setDate(trtD.getDate() + 1);
-        // trtD.setHours(0);
-        // trtD.setMinutes(0);
-        // trtD.setSeconds(0);
+        // trtD = new Date(
+        //     trtD.toLocaleString("en-US", { timeZone: "Asia/Dubai" })
+        // );
 
-        trtD = new Date(
-            trtD.toLocaleString("en-US", { timeZone: "Asia/Dubai" })
-        );
-
-        trtD.setHours(0);
+        trtD.setHours(trtD.getHours() - 4);
         trtD.setMinutes(0);
         trtD.setSeconds(0);
 
