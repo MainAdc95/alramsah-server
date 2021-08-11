@@ -296,12 +296,13 @@ export async function addNews(req: Request, res: Response, next: NextFunction) {
                 created_at,
                 updated_at,
                 is_published,
-                thumbnail_description
+                thumbnail_description,
+                published_at
                 ${section ? `, section` : ""}
                 ${file ? `, file` : ""}
             ) VALUES (${
                 thumbnail ? `'${thumbnail.image_id}',` : ""
-            } $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+            } $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
             ${section ? `, '${section}'` : ""}
             ${file ? `, '${file}'` : ""}
             )
@@ -333,6 +334,7 @@ export async function addNews(req: Request, res: Response, next: NextFunction) {
                 date,
                 is_published,
                 thumbnail_description,
+                is_published ? date : null,
             ]
         );
 
@@ -1042,7 +1044,7 @@ export async function getStatistics(
                 date = d.setMonth(d.getMonth() - 12 * 3);
                 break;
         }
-
+        console.log(date);
         const { rows: sections } = await pool.query(
             `
             SELECT
@@ -1127,7 +1129,7 @@ export async function getStatistics(
                 COUNT(v) as views
             FROM news n
                 LEFT JOIN views v ON n.news_id=v.news_id
-            WHERE is_published=true AND n.created_at > $1
+            WHERE is_published=true AND n.published_at > $1
             GROUP BY n.news_id
             ORDER BY views desc
             LIMIT 10
@@ -1146,7 +1148,7 @@ export async function getStatistics(
                 COUNT(v) as views
             FROM news n
                 LEFT JOIN views v ON n.news_id=v.news_id
-            WHERE n.created_at > $1
+            WHERE n.published_at > $1
             GROUP BY n.news_id
             ORDER BY views desc
             `,
