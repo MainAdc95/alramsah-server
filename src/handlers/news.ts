@@ -1100,7 +1100,7 @@ export async function getStatistics(
         //     trtD.toLocaleString("en-US", { timeZone: "Asia/Dubai" })
         // );
 
-        trtD.setHours(trtD.getHours() - 4);
+        trtD.setHours(0);
         trtD.setMinutes(0);
         trtD.setSeconds(0);
 
