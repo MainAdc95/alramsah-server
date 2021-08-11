@@ -1096,7 +1096,7 @@ export async function getStatistics(
 
         let trtD = new Date();
 
-        trtD.setHours(trtD.getHours() - 4);
+        trtD.setHours(trtD.getHours() - trtD.getHours());
         trtD.setMinutes(0);
         trtD.setSeconds(0);
 
