@@ -1103,6 +1103,7 @@ export async function getStatistics(
         const offset = 4;
         const dubaiTime = utc + 3600000 * offset;
         const trtD = new Date(dubaiTime);
+        trtD.setHours(0);
 
         const {
             rows: [{ trtNews }],
