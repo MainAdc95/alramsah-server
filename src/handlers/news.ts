@@ -1030,32 +1030,21 @@ export async function getStatistics(
         switch (dataType) {
             case "days":
                 date = new Date(d.setDate(d.getDate() - 6));
-                date.setHours(-4);
-                date.setMinutes(0);
-                date.setSeconds(0);
                 break;
             case "weeks":
-                d.setHours(0);
                 date = d.setDate(d.getDate() - 30);
-                date.setHours(-4);
-                date.setMinutes(0);
-                date.setSeconds(0);
                 break;
             case "months":
-                d.setHours(0);
                 date = d.setMonth(d.getMonth() - 12);
-                date.setHours(-4);
-                date.setMinutes(0);
-                date.setSeconds(0);
                 break;
             case "years":
-                d.setHours(0);
                 date = d.setMonth(d.getMonth() - 12 * 3);
-                date.setHours(-4);
-                date.setMinutes(0);
-                date.setSeconds(0);
                 break;
         }
+
+        date.setHours(-4);
+        date.setMinutes(0);
+        date.setSeconds(0);
 
         const { rows: sections } = await pool.query(
             `
@@ -1106,10 +1095,17 @@ export async function getStatistics(
         );
 
         const trtD = new Date();
+
+        // const dd = new Date()
+        // dd.setFullYear(trtD.getFullYear())
+        // dd.setMonth(trtD.getMonth())
+        // dd.setFullYear(trtD.getFullYear())
+        trtD.setHours(0);
+        console.log(trtD.toLocaleString());
+
         trtD.setHours(-4);
         trtD.setMinutes(0);
         trtD.setSeconds(0);
-        console.log(trtD);
 
         const {
             rows: [{ trtNews }],
@@ -1151,11 +1147,6 @@ export async function getStatistics(
             [new Date(date)]
         );
 
-        const news24d = new Date();
-        news24d.setHours(0);
-        news24d.setMinutes(0);
-        news24d.setSeconds(0);
-
         const { rows: news24hr } = await pool.query(
             `
             SELECT
@@ -1164,11 +1155,11 @@ export async function getStatistics(
                 COUNT(v) as views
             FROM news n
                 LEFT JOIN views v ON n.news_id=v.news_id
-            WHERE n.published_at > $1
+            WHERE is_published=true AND n.published_at > $1
             GROUP BY n.news_id
             ORDER BY views desc
             `,
-            [news24d]
+            [trtD]
         );
 
         const {
