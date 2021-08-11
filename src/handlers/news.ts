@@ -1096,16 +1096,14 @@ export async function getStatistics(
 
         const trtD = new Date();
 
-        // const dd = new Date()
-        // dd.setFullYear(trtD.getFullYear())
-        // dd.setMonth(trtD.getMonth())
-        // dd.setFullYear(trtD.getFullYear())
         trtD.setHours(0);
-        console.log(trtD.toLocaleString());
-
-        trtD.setHours(-4);
         trtD.setMinutes(0);
         trtD.setSeconds(0);
+        console.log(trtD.toLocaleString());
+
+        // trtD.setHours(-4);
+        // trtD.setMinutes(0);
+        // trtD.setSeconds(0);
 
         const {
             rows: [{ trtNews }],
