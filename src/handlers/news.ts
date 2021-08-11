@@ -1096,11 +1096,16 @@ export async function getStatistics(
 
         let trtD = new Date();
 
-        trtD = new Date(trtD.toLocaleDateString());
+        trtD = new Date(
+            trtD.getFullYear(),
+            trtD.getMonth(),
+            trtD.getDate(),
+            0,
+            0,
+            0
+        );
 
-        // trtD.setHours(trtD.getHours() - trtD.getHours());
-        // trtD.setMinutes(0);
-        // trtD.setSeconds(0);
+        console.log(trtD);
 
         const {
             rows: [{ trtNews }],
@@ -1109,9 +1114,9 @@ export async function getStatistics(
             SELECT
                 count(*) as "trtNews"
             FROM views
-            WHERE created_at > now()::date
-            `
-            // [trtD]
+            WHERE created_at > $1
+            `,
+            [trtD]
         );
 
         const { rows: alrVisitors } = await pool.query(
@@ -1121,9 +1126,9 @@ export async function getStatistics(
                     user_data,
                     created_at
                 FROM visitors
-                WHERE created_at > now()::date
-            `
-            // [trtD]
+                WHERE created_at > $1
+            `,
+            [trtD]
         );
 
         const { rows: latestNews } = await pool.query(
