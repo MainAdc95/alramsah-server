@@ -11,6 +11,7 @@ const fileQuery = (
     SELECT
         f.file_id,
         f.text,
+        f.is_active,
         f.created_at,
         f.updated_at,
         jsonb_build_object (
