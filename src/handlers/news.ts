@@ -1094,18 +1094,15 @@ export async function getStatistics(
             [new Date(date)]
         );
 
-        let today = new Date();
-        let trtD = new Date(
-            today.getFullYear() +
-                "-" +
-                (today.getMonth() + 1) +
-                "-" +
-                today.getDate()
-        );
+        const dt = new Date();
+        const localTime = dt.getTime();
+        const localOffset = dt.getTimezoneOffset() * 60000;
 
-        trtD.setHours(0);
+        const utc = localTime + localOffset;
 
-        console.log(trtD, trtD.getHours());
+        const offset = 4;
+        const dubaiTime = utc + 3600000 * offset;
+        const trtD = new Date(dubaiTime);
 
         const {
             rows: [{ trtNews }],
