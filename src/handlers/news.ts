@@ -1021,7 +1021,7 @@ export async function getStatistics(
     next: NextFunction
 ) {
     try {
-        const { dataType } = req.query;
+        const { dataType, clientDate } = req.query;
 
         let d = new Date();
 
@@ -1096,16 +1096,9 @@ export async function getStatistics(
 
         let trtD = new Date();
 
-        trtD = new Date(
-            trtD.getFullYear(),
-            trtD.getMonth(),
-            trtD.getDate(),
-            0,
-            0,
-            0
-        );
+        trtD.setHours(0, 0, 0, 0);
 
-        console.log(trtD);
+        console.log(trtD, trtD.getHours());
 
         const {
             rows: [{ trtNews }],
