@@ -1094,17 +1094,22 @@ export async function getStatistics(
             [new Date(date)]
         );
 
-        const trtD = new Date();
+        let trtD = new Date();
 
         // trtD.setDate(trtD.getDate() + 1);
         // trtD.setHours(0);
         // trtD.setMinutes(0);
         // trtD.setSeconds(0);
-        // console.log(trtD.toLocaleString());
+
+        trtD = new Date(
+            trtD.toLocaleString("en-US", { timeZone: "Asia/Dubai" })
+        );
 
         trtD.setHours(0);
         trtD.setMinutes(0);
         trtD.setSeconds(0);
+
+        console.log(trtD);
 
         const {
             rows: [{ trtNews }],
