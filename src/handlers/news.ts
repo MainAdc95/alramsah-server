@@ -1028,8 +1028,8 @@ export async function getStatistics(
 
         switch (dataType) {
             case "days":
-                d.setHours(0);
-                date = d.setDate(d.getDate() - 7);
+                date = new Date(d.setDate(d.getDate() - 7));
+                date.setHours(0);
                 break;
             case "weeks":
                 d.setHours(0);
@@ -1044,7 +1044,7 @@ export async function getStatistics(
                 date = d.setMonth(d.getMonth() - 12 * 3);
                 break;
         }
-        console.log(date);
+
         const { rows: sections } = await pool.query(
             `
             SELECT
