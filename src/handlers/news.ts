@@ -1099,7 +1099,7 @@ export async function getStatistics(
         trtD.setHours(0);
         trtD.setMinutes(0);
         trtD.setSeconds(0);
-
+        console.log(trtD);
         const {
             rows: [{ trtNews }],
         } = await pool.query(
@@ -1164,11 +1164,7 @@ export async function getStatistics(
             visitedCountries: visitors,
             visitedCountriesRealtime: RealTimeVisitors,
         } = await runReport();
-        console.log(
-            views,
-            new Date(date),
-            "----------------------------------------------------- TEST"
-        );
+
         return res.status(200).json({
             sections,
             views,
