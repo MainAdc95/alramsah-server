@@ -1098,6 +1098,10 @@ export async function getStatistics(
 
         trtD.setHours(0, 0, 0, 0);
 
+        trtD = new Date(
+            trtD.toLocaleString("en-US", { timeZone: "Asia/Dubai" })
+        );
+
         console.log(trtD, trtD.getHours());
 
         const {
