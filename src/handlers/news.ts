@@ -1068,7 +1068,6 @@ export async function getStatistics(
                     ON v.section_id=s.section_id
             GROUP BY s.section_id
             ORDER BY s.created_at desc
-
             `,
             [new Date(date)]
         );
@@ -1095,11 +1094,15 @@ export async function getStatistics(
             [new Date(date)]
         );
 
-        const trtD = new Date();
-        trtD.setSeconds(0);
-        trtD.setMinutes(0);
-        trtD.setHours(0);
-        console.log(trtD);
+        let today = new Date();
+        let trtD = new Date(
+            today.getFullYear() +
+                "-" +
+                (today.getMonth() + 1) +
+                "-" +
+                today.getDate()
+        );
+
         const {
             rows: [{ trtNews }],
         } = await pool.query(
