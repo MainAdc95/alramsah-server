@@ -943,6 +943,7 @@ export async function homeInfo(
                 ) as image
             FROM files f
                 LEFT JOIN images i ON i.image_id=f.image_id
+            WHERE is_active=true
             `
         );
 
@@ -1029,20 +1030,30 @@ export async function getStatistics(
         switch (dataType) {
             case "days":
                 date = new Date(d.setDate(d.getDate() - 6));
-                date.setHours(0);
+                date.setHours(-4);
                 date.setMinutes(0);
+                date.setSeconds(0);
                 break;
             case "weeks":
                 d.setHours(0);
                 date = d.setDate(d.getDate() - 30);
+                date.setHours(-4);
+                date.setMinutes(0);
+                date.setSeconds(0);
                 break;
             case "months":
                 d.setHours(0);
                 date = d.setMonth(d.getMonth() - 12);
+                date.setHours(-4);
+                date.setMinutes(0);
+                date.setSeconds(0);
                 break;
             case "years":
                 d.setHours(0);
                 date = d.setMonth(d.getMonth() - 12 * 3);
+                date.setHours(-4);
+                date.setMinutes(0);
+                date.setSeconds(0);
                 break;
         }
 

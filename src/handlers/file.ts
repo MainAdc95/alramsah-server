@@ -68,10 +68,10 @@ export async function getFiles(
     next: NextFunction
 ) {
     try {
-        let { p, r }: any = req.query;
+        let { p, r, is_active }: any = req.query;
 
         p = Number(p);
-        r = r ? Number(r) : 20;
+        r = r ? Number(r) : 100;
 
         let {
             rows: [{ results }],
@@ -80,7 +80,12 @@ export async function getFiles(
         results = Number(results);
 
         const { rows: files } = await pool.query(
-            fileQuery("", "", r ? `LIMIT ${r}` : "", `OFFSET ${sum(p, r)}`)
+            fileQuery(
+                is_active ? `WHERE is_active=true` : "",
+                "",
+                r ? `LIMIT ${r}` : "",
+                `OFFSET ${sum(p, r)}`
+            )
         );
 
         return res.status(200).json({
@@ -95,7 +100,7 @@ export async function getFiles(
 export async function addFile(req: Request, res: Response, next: NextFunction) {
     try {
         const { authId } = req.query;
-        let { text, image } = req.body;
+        let { text, image, is_active } = req.body;
 
         text = String(text).trim();
 
@@ -111,10 +116,20 @@ export async function addFile(req: Request, res: Response, next: NextFunction) {
                 created_at,
                 updated_at,
                 updated_by,
-                created_by
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+                created_by,
+                is_active
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             `,
-            [fileId, text, image.image_id, date, date, authId, authId]
+            [
+                fileId,
+                text,
+                image.image_id,
+                date,
+                date,
+                authId,
+                authId,
+                is_active,
+            ]
         );
 
         return res.status(201).json("");
@@ -131,7 +146,7 @@ export async function editFile(
     try {
         const { authId } = req.query;
         const { fileId } = req.params;
-        let { text, image } = req.body;
+        let { text, image, is_active } = req.body;
 
         text = String(text).trim();
 
@@ -144,10 +159,11 @@ export async function editFile(
                 text=$1,
                 image_id=$2,
                 updated_at=$3,
-                updated_by=$4
-            WHERE file_id=$5
+                updated_by=$4,
+                is_active=$5
+            WHERE file_id=$6
             `,
-            [text, image.image_id, date, authId, fileId]
+            [text, image.image_id, date, authId, is_active, fileId]
         );
 
         return res.status(200).json("");

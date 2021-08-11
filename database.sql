@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS images (
 CREATE TABLE IF NOT EXISTS files (
     file_id uuid PRIMARY KEY,
     text TEXT NOT NULL,
+    is_active BOOLEAN DEFAULT true,
     image_id uuid REFERENCES images(image_id) ON UPDATE CASCADE,
     created_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
     updated_by uuid REFERENCES users(user_id) ON DELETE NO ACTION ON UPDATE CASCADE,
@@ -259,6 +260,7 @@ CREATE TABLE IF NOT EXISTS views (
     article_id uuid REFERENCES articles(article_id) ON DELETE NO ACTION ON UPDATE CASCADE,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
 
 -- SELECT con.*
 --        FROM pg_catalog.pg_constraint con
