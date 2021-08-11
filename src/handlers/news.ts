@@ -1095,15 +1095,17 @@ export async function getStatistics(
         );
 
         const dt = new Date();
+        dt.setHours(0);
+        dt.setMinutes(0);
+        dt.setSeconds(0);
         const localTime = dt.getTime();
         const localOffset = dt.getTimezoneOffset() * 60000;
-
         const utc = localTime + localOffset;
 
         const offset = 4;
         const dubaiTime = utc + 3600000 * offset;
         const trtD = new Date(dubaiTime);
-        trtD.setHours(0);
+        console.log(trtD);
 
         const {
             rows: [{ trtNews }],
