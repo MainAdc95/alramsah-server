@@ -1042,7 +1042,7 @@ export async function getStatistics(
                 break;
         }
 
-        date.setHours(-4);
+        date.setHours(date.getHours() - 4);
         date.setMinutes(0);
         date.setSeconds(0);
 
