@@ -1044,7 +1044,7 @@ export async function getStatistics(
                 date = d.setMonth(d.getMonth() - 12 * 3);
                 break;
         }
-
+        console.log(new Date());
         const { rows: sections } = await pool.query(
             `
             SELECT
