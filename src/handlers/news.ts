@@ -1164,7 +1164,11 @@ export async function getStatistics(
             visitedCountries: visitors,
             visitedCountriesRealtime: RealTimeVisitors,
         } = await runReport();
-
+        console.log(
+            views,
+            new Date(date),
+            "----------------------------------------------------- TEST"
+        );
         return res.status(200).json({
             sections,
             views,
@@ -1177,7 +1181,6 @@ export async function getStatistics(
             alrVisitors,
         });
     } catch (err) {
-        console.log(err);
         return next(err);
     }
 }
