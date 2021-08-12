@@ -19,8 +19,8 @@ const newsQuery = (
             SELECT
                 n.news_id,
                 n.title,
-                n.readers,
                 is_archived,
+                count(vi) as readers,
                 ${isAdmin ? "n.updated_at," : ""}
                 n.created_at,
                 ${
@@ -50,6 +50,7 @@ const newsQuery = (
                 LEFT JOIN users ub ON ub.user_id=n.updated_by
                 LEFT JOIN sections s ON s.section_id=n.section
                 LEFT JOIN images tn ON tn.image_id=n.thumbnail
+                LEFT JOIN views vi ON vi.news_id=n.news_id
                 LEFT JOIN (
                     SELECT
                         ni.news_id,
@@ -883,34 +884,34 @@ export async function homeInfo(
             const { rows: news } = await pool.query(
                 `
                 SELECT
-                        n.news_id,
-                        n.intro,
-                        n.section,
-                        n.title,
-                        n.created_at,
-                        n.is_published,
-                        CASE WHEN COUNT(i)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(DISTINCT i.image) END as images,
-                        CASE WHEN COUNT(tn)=0 THEN null ELSE jsonb_build_object (
-                            'image_id', tn.image_id,
-                            'sizes', tn.sizes
-                        ) END as thumbnail
-                    FROM news n
-                        LEFT JOIN images tn ON tn.image_id=n.thumbnail
-                        LEFT JOIN (
-                            SELECT
-                                ni.news_id,
-                                jsonb_build_object (
-                                    'image_id', i.image_id,
-                                    'sizes', i.sizes
-                                ) as image
-                            FROM news_image ni
-                                LEFT JOIN images i ON i.image_id=ni.image_id
-                        ) as i
-                            ON i.news_id=n.news_id
-                    WHERE n.is_published=true AND n.section=$1
-                    GROUP BY n.news_id, tn.image_id
-                    ORDER BY n.created_at desc
-                    LIMIT ${section.section_name === "سياسة" ? 10 : 1}
+                    n.news_id,
+                    n.intro,
+                    n.section,
+                    n.title,
+                    n.created_at,
+                    n.is_published,
+                    CASE WHEN COUNT(i)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(DISTINCT i.image) END as images,
+                    CASE WHEN COUNT(tn)=0 THEN null ELSE jsonb_build_object (
+                        'image_id', tn.image_id,
+                        'sizes', tn.sizes
+                    ) END as thumbnail
+                FROM news n
+                    LEFT JOIN images tn ON tn.image_id=n.thumbnail
+                    LEFT JOIN (
+                        SELECT
+                            ni.news_id,
+                            jsonb_build_object (
+                                'image_id', i.image_id,
+                                'sizes', i.sizes
+                            ) as image
+                        FROM news_image ni
+                            LEFT JOIN images i ON i.image_id=ni.image_id
+                    ) as i
+                        ON i.news_id=n.news_id
+                WHERE n.is_published=true AND n.section=$1 AND published_at is not null
+                GROUP BY n.news_id, tn.image_id
+                ORDER BY n.published_at desc
+                LIMIT ${section.section_name === "سياسة" ? 10 : 1}
                 `,
                 [section.section_id]
             );
@@ -1097,8 +1098,6 @@ export async function getStatistics(
         let trtD = new Date();
 
         trtD.setHours(0, 0, 0, 0);
-
-        console.log(trtD, trtD.getHours());
 
         const {
             rows: [{ trtNews }],
