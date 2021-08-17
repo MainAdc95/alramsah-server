@@ -876,6 +876,7 @@ export async function homeInfo(
                 s.created_at,
                 s.section_order
             FROM sections s
+            WHERE section_id NOT IN ('8314107c-975d-41de-b718-6bcb3f16fb31', '75637908-bea2-4286-8121-e881a6acec8e')
             ORDER BY s.section_order ASC
             `
             );
@@ -911,13 +912,51 @@ export async function homeInfo(
                 WHERE n.is_published=true AND n.section=$1 AND published_at is not null
                 GROUP BY n.news_id, tn.image_id
                 ORDER BY n.published_at desc
-                LIMIT ${section.section_name === "سياسة" ? 10 : 1}
+                LIMIT 1
                 `,
                 [section.section_id]
             );
 
             section.news = news;
         }
+
+        const { rows: sliderNews } = await pool.query(
+            `
+            SELECT
+                n.news_id,
+                n.title,
+                n.title,
+                n.created_at,
+                CASE WHEN COUNT(s)=0 THEN null ELSE jsonb_build_object (
+                    'section_id', s.section_id,
+                    'section_name', s.section_name,
+                    'color', s.color
+                ) END as section,
+                CASE WHEN COUNT(i)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(DISTINCT i.image) END as images,
+                CASE WHEN COUNT(tn)=0 THEN null ELSE jsonb_build_object (
+                    'image_id', tn.image_id,
+                    'sizes', tn.sizes
+                ) END as thumbnail
+            FROM news n
+                LEFT JOIN images tn ON tn.image_id=n.thumbnail
+                LEFT JOIN sections s ON s.section_id=n.section
+                LEFT JOIN (
+                    SELECT
+                        ni.news_id,
+                        jsonb_build_object (
+                            'image_id', i.image_id,
+                            'sizes', i.sizes
+                        ) as image
+                    FROM news_image ni
+                        LEFT JOIN images i ON i.image_id=ni.image_id
+                ) as i
+                    ON i.news_id=n.news_id
+            WHERE n.is_published=true AND published_at is not null AND section is not null
+            GROUP BY n.news_id, tn.image_id, s.section_id
+            ORDER BY n.published_at desc
+            LIMIT 10
+            `
+        );
 
         const { rows: strips } = await pool.query(
             `
@@ -1010,7 +1049,7 @@ export async function homeInfo(
 
         return res
             .status(200)
-            .json({ sections, strips, files, tmrNews, article });
+            .json({ sections, strips, files, tmrNews, article, sliderNews });
     } catch (err) {
         return next(err);
     }
