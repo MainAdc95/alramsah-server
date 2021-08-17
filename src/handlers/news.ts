@@ -876,7 +876,6 @@ export async function homeInfo(
                 s.created_at,
                 s.section_order
             FROM sections s
-            WHERE section_id NOT IN ('8314107c-975d-41de-b718-6bcb3f16fb31', '75637908-bea2-4286-8121-e881a6acec8e')
             ORDER BY s.section_order ASC
             `
             );

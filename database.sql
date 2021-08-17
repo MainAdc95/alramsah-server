@@ -81,15 +81,16 @@ CREATE TABLE IF NOT EXISTS sections (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- UPDATE sections SET section_order=1 WHERE section_name='سياسة';
--- UPDATE sections SET section_order=2 WHERE section_name='اقتصاد';
--- UPDATE sections SET section_order=3 WHERE section_name='ثقافة';
--- UPDATE sections SET section_order=4 WHERE section_name='رياضة';
--- UPDATE sections SET section_order=5 WHERE section_name='تكنولوجيا';
--- UPDATE sections SET section_order=6 WHERE section_name='منوعات';
--- UPDATE sections SET section_order=7 WHERE section_name='سياحة';
--- UPDATE sections SET section_order=8 WHERE section_name='صحة';
--- UPDATE sections SET section_order=9 WHERE section_name='كتاب وآراء';
+UPDATE sections SET section_order=1 WHERE section_name='اخبار العالم';
+UPDATE sections SET section_order=2 WHERE section_name='اخبار العرب';
+UPDATE sections SET section_order=3 WHERE section_name='اقتصاد';
+UPDATE sections SET section_order=4 WHERE section_name='ثقافة';
+UPDATE sections SET section_order=5 WHERE section_name='رياضة';
+UPDATE sections SET section_order=6 WHERE section_name='تكنولوجيا';
+UPDATE sections SET section_order=7 WHERE section_name='منوعات';
+UPDATE sections SET section_order=8 WHERE section_name='سياحة';
+UPDATE sections SET section_order=9 WHERE section_name='صحة';
+UPDATE sections SET section_order=10 WHERE section_name='كتاب وآراء';
 
 CREATE TABLE IF NOT EXISTS tags (
     tag_id uuid PRIMARY KEY,
