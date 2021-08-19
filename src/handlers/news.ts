@@ -14,7 +14,8 @@ const newsQuery = (
     filter: string,
     order: string,
     limit: string,
-    offset: string
+    offset: string,
+    mvn?: boolean
 ) => `
             SELECT
                 n.news_id,
@@ -51,6 +52,7 @@ const newsQuery = (
                 LEFT JOIN sections s ON s.section_id=n.section
                 LEFT JOIN images tn ON tn.image_id=n.thumbnail
                 LEFT JOIN views vi ON vi.news_id=n.news_id
+                ${mvn && "LEFT JOIN views v ON v.news_id=n.news_id"}
                 LEFT JOIN (
                     SELECT
                         ni.news_id,
@@ -240,10 +242,11 @@ export async function getAllNews(
                     `
                     : "",
                 mvn
-                    ? "ORDER BY n.readers desc"
+                    ? "ORDER BY count(v) desc"
                     : `ORDER BY  n.created_at ${order || "desc"}`,
                 r ? `LIMIT ${r}` : "",
-                `OFFSET ${sum(p, r)}`
+                `OFFSET ${sum(p, r)}`,
+                true
             )
         );
 
@@ -987,13 +990,42 @@ export async function homeInfo(
         );
 
         const { rows: tmrNews } = await pool.query(
-            newsQuery(
-                false,
-                "WHERE n.created_at > now()::date - 7",
-                "ORDER BY n.readers desc, n.created_by DESC",
-                "LIMIT 10",
-                ""
-            )
+            `
+            SELECT
+                n.news_id,
+                n.title,
+                n.title,
+                n.created_at,
+                CASE WHEN COUNT(s)=0 THEN null ELSE jsonb_build_object (
+                    'section_id', s.section_id,
+                    'section_name', s.section_name,
+                    'color', s.color
+                ) END as section,
+                CASE WHEN COUNT(i)=0 THEN ARRAY[]::jsonb[] ELSE array_agg(DISTINCT i.image) END as images,
+                CASE WHEN COUNT(tn)=0 THEN null ELSE jsonb_build_object (
+                    'image_id', tn.image_id,
+                    'sizes', tn.sizes
+                ) END as thumbnail
+            FROM news n
+                LEFT JOIN images tn ON tn.image_id=n.thumbnail
+                LEFT JOIN sections s ON s.section_id=n.section
+                LEFT JOIN views v ON v.news_id=n.news_id
+                LEFT JOIN (
+                    SELECT
+                        ni.news_id,
+                        jsonb_build_object (
+                            'image_id', i.image_id,
+                            'sizes', i.sizes
+                        ) as image
+                    FROM news_image ni
+                        LEFT JOIN images i ON i.image_id=ni.image_id
+                ) as i
+                    ON i.news_id=n.news_id
+            WHERE n.is_published=true AND published_at is not null AND section is not null
+            GROUP BY n.news_id, tn.image_id, s.section_id
+            ORDER BY count(v) desc
+            LIMIT 10
+            `
         );
 
         const {
@@ -1050,6 +1082,8 @@ export async function homeInfo(
             .status(200)
             .json({ sections, strips, files, tmrNews, article, sliderNews });
     } catch (err) {
+        console.log(err);
+
         return next(err);
     }
 }
