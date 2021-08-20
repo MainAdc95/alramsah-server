@@ -21,7 +21,6 @@ const newsQuery = (
                 n.news_id,
                 n.title,
                 is_archived,
-                count(vi) as readers,
                 ${isAdmin ? "n.updated_at," : ""}
                 n.created_at,
                 ${
@@ -51,7 +50,6 @@ const newsQuery = (
                 LEFT JOIN users ub ON ub.user_id=n.updated_by
                 LEFT JOIN sections s ON s.section_id=n.section
                 LEFT JOIN images tn ON tn.image_id=n.thumbnail
-                LEFT JOIN views vi ON vi.news_id=n.news_id
                 ${mvn && "LEFT JOIN views v ON v.news_id=n.news_id"}
                 LEFT JOIN (
                     SELECT
