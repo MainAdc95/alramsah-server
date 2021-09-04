@@ -987,6 +987,10 @@ export async function homeInfo(
             `
         );
 
+        const tmrDate = new Date();
+        tmrDate.setHours(0, 0, 0, 0);
+        tmrDate.setDate(tmrDate.getDate() - 6);
+
         const { rows: tmrNews } = await pool.query(
             `
             SELECT
@@ -1019,69 +1023,18 @@ export async function homeInfo(
                         LEFT JOIN images i ON i.image_id=ni.image_id
                 ) as i
                     ON i.news_id=n.news_id
-            WHERE n.is_published=true AND published_at is not null AND section is not null
+            WHERE n.is_published=true AND published_at > $1 AND published_at is not null AND section is not null
             GROUP BY n.news_id, tn.image_id, s.section_id
             ORDER BY count(v) desc
             LIMIT 10
-            `
-        );
-
-        const {
-            rows: [article],
-        } = await pool.query(
-            `
-            SELECT
-                a.article_id,
-                a.title,
-                a.readers,
-                a.created_at,
-                jsonb_build_object (
-                    'user_id', cb.user_id,
-                    'username', cb.username,
-                    'avatar', cb.avatar
-                ) as created_by,
-                CASE WHEN COUNT(tn)=0 THEN null ELSE jsonb_build_object (
-                    'image_id', tn.image_id,
-                    'sizes', tn.sizes
-                ) END as thumbnail
-            FROM articles a
-                LEFT JOIN images tn ON tn.image_id=a.thumbnail
-                LEFT JOIN (
-                    SELECT
-                        u.user_id,
-                        u.username,
-                        jsonb_build_object (
-                            'image_id', ui.image_id,
-                            'sizes', ui.sizes
-                        ) as avatar
-                    FROM users u
-                        LEFT JOIN user_images ui ON ui.image_id=u.avatar
-                ) as cb
-                    ON cb.user_id=a.created_by
-                LEFT JOIN (
-                    SELECT
-                        ni.article_id,
-                        jsonb_build_object (
-                            'image_id', i.image_id,
-                            'sizes', i.sizes
-                        ) as image
-                    FROM article_image ni
-                        LEFT JOIN images i ON i.image_id=ni.image_id
-                ) as i
-                    ON i.article_id=a.article_id
-                WHERE a.is_published=true
-                GROUP BY a.article_id, cb.user_id, cb.username, cb.avatar, tn.image_id
-                ORDER BY a.created_at desc
-                LIMIT 1
-            `
+            `,
+            [new Date(tmrDate)]
         );
 
         return res
             .status(200)
-            .json({ sections, strips, files, tmrNews, article, sliderNews });
+            .json({ sections, strips, files, tmrNews, sliderNews });
     } catch (err) {
-        console.log(err);
-
         return next(err);
     }
 }
@@ -1092,7 +1045,7 @@ export async function getStatistics(
     next: NextFunction
 ) {
     try {
-        const { dataType, clientDate } = req.query;
+        const { dataType } = req.query;
 
         let d = new Date();
 
@@ -1103,13 +1056,13 @@ export async function getStatistics(
                 date = new Date(d.setDate(d.getDate() - 6));
                 break;
             case "weeks":
-                date = d.setDate(d.getDate() - 30);
+                date = new Date(d.setDate(d.getDate() - 30));
                 break;
             case "months":
-                date = d.setMonth(d.getMonth() - 12);
+                date = new Date(d.setMonth(d.getMonth() - 12));
                 break;
             case "years":
-                date = d.setMonth(d.getMonth() - 12 * 3);
+                date = new Date(d.setMonth(d.getMonth() - 12 * 3));
                 break;
         }
 

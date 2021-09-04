@@ -54,8 +54,8 @@ export async function addImages(
                                 width: size === "m" ? 600 : 300,
                             })
                             [format]({
-                                quality: 80,
                                 mozjpeg: format === "jpeg",
+                                quality: 80,
                             });
                     }
 
